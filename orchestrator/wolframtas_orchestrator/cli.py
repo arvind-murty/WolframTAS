@@ -9,7 +9,7 @@ from typing import Any
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run the WolfTAS optimization pipeline.")
+    parser = argparse.ArgumentParser(description="Run the WolframTAS optimization pipeline.")
     parser.add_argument("request", type=Path, help="Optimization request JSON from the mod.")
     parser.add_argument("--mathematica-command", nargs="+", help="Command that emits approximate solution JSON.")
     parser.add_argument("--solver-command", nargs="+", help="Command that reads approximate JSON on stdin and emits exact JSON.")
@@ -61,7 +61,7 @@ def validate_request_shape(request: dict[str, Any]) -> None:
     if missing:
         raise ValueError(f"optimization request missing fields: {', '.join(missing)}")
     if request["minecraft_version"] != "1.8.9":
-        raise ValueError("WolfTAS currently targets Minecraft 1.8.9")
+        raise ValueError("WolframTAS currently targets Minecraft 1.8.9")
 
 
 def run_json_producer(command: list[str], request: dict[str, Any]) -> dict[str, Any]:

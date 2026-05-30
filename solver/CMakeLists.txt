@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
-project(wolftas_solver LANGUAGES CXX)
+project(wolframtas_solver LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(wolftas_solver
+add_executable(wolframtas_solver
     src/main.cpp
 )
 
-target_include_directories(wolftas_solver PRIVATE include)
+target_include_directories(wolframtas_solver PRIVATE include)
 
 add_executable(angle_table_smoke
     tests/angle_table_smoke.cpp

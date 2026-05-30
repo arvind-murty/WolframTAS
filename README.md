@@ -1,6 +1,6 @@
-# WolfTAS
+# WolframTAS
 
-WolfTAS is a Forge 1.8.9 Minecraft mod for building and running all-in-one
+WolframTAS is a Forge 1.8.9 Minecraft mod for building and running all-in-one
 parkour optimizations.
 
 The intended pipeline is:

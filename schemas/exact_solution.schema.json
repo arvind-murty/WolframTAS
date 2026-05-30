@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://wolftas.local/schemas/exact_solution.schema.json",
-  "title": "WolfTAS Exact Solution",
+  "$id": "https://wolframtas.local/schemas/exact_solution.schema.json",
+  "title": "WolframTAS Exact Solution",
   "type": "object",
   "required": ["version", "status", "angles_discrete", "states_exact", "macro_rows", "diagnostics"],
   "properties": {

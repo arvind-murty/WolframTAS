@@ -1,6 +1,6 @@
-# WolfTAS Agent Notes
+# WolframTAS Agent Notes
 
-WolfTAS is a Forge 1.8.9 Minecraft client mod for optimizing parkour routes.
+WolframTAS is a Forge 1.8.9 Minecraft client mod for optimizing parkour routes.
 
 Use this file as persistent project context for Codex. Keep it short and update
 it whenever stable technical decisions change.

@@ -61,5 +61,5 @@ Produced by the C++ exact solver.
 
 Status: not finalized.
 
-Use the existing external macro-tool CSV format first. A WolfTAS-native macro
+Use the existing external macro-tool CSV format first. A WolframTAS-native macro
 format can be added later if needed.

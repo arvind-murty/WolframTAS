@@ -1,4 +1,4 @@
-package io.github.wolftas;
+package io.github.wolframtas;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +13,7 @@ public final class OptimizationRequestWriter {
     }
 
     public Path writeFixtureRequest() throws IOException {
-        Path outputDirectory = configDirectory.resolve("wolftas");
+        Path outputDirectory = configDirectory.resolve("wolframtas");
         Files.createDirectories(outputDirectory);
 
         Path requestPath = outputDirectory.resolve("request.json");

@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace wolftas {
+namespace wolframtas {
 
 constexpr std::int32_t kAngleTableSize = 16384;
 
@@ -21,4 +21,4 @@ inline double snap_degrees(double degrees) {
     return index_to_degrees(degrees_to_index(degrees));
 }
 
-} // namespace wolftas
+} // namespace wolframtas

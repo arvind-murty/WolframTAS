@@ -80,9 +80,9 @@ The Wolfram app kernel path on this Mac is:
 The initial orchestrator supports a fixture-friendly no-op mode:
 
 ```sh
-python3 -m wolftas_orchestrator examples/simple_jump/request.json \
+python3 -m wolframtas_orchestrator examples/simple_jump/request.json \
   --approx-solution examples/simple_jump/approx_solution.json \
-  --exact-solution-out /tmp/wolftas_exact_solution.json
+  --exact-solution-out /tmp/wolframtas_exact_solution.json
 ```
 
 ## C++ Solver
@@ -93,7 +93,7 @@ from stdin and writes exact solution JSON to stdout.
 ```sh
 cmake -S solver -B solver/build
 cmake --build solver/build
-solver/build/wolftas_solver < examples/simple_jump/approx_solution.json
+solver/build/wolframtas_solver < examples/simple_jump/approx_solution.json
 ```
 
 ## Forge Mod

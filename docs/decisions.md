@@ -2,7 +2,7 @@
 
 ## 0001: Use Forge 1.8.9
 
-WolfTAS targets Minecraft Forge 1.8.9.
+WolframTAS targets Minecraft Forge 1.8.9.
 
 Implications:
 

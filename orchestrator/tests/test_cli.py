@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from wolftas_orchestrator.cli import main
+from wolframtas_orchestrator.cli import main
 
 
 def test_fixture_pipeline_writes_exact_solution(tmp_path: Path) -> None:

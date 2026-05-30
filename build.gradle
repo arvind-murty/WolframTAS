@@ -1,4 +1,4 @@
 allprojects {
-    group = "io.github.wolftas"
+    group = "io.github.wolframtas"
     version = "0.1.0-SNAPSHOT"
 }

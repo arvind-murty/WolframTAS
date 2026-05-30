@@ -1,13 +1,13 @@
 [
   {
-    "modid": "wolftas",
-    "name": "WolfTAS",
+    "modid": "wolframtas",
+    "name": "WolframTAS",
     "description": "All-in-one parkour optimizer for Forge 1.8.9.",
     "version": "${version}",
     "mcversion": "${mcversion}",
     "url": "",
     "updateUrl": "",
-    "authorList": ["WolfTAS"],
+    "authorList": ["WolframTAS"],
     "credits": "",
     "logoFile": "",
     "screenshots": [],

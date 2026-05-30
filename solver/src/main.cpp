@@ -1,4 +1,4 @@
-#include "wolftas/angle_table.hpp"
+#include "wolframtas/angle_table.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -17,16 +17,16 @@ std::string read_stdin() {
 int main() {
     const std::string input = read_stdin();
     if (input.empty()) {
-        std::cerr << "wolftas_solver expected approximate solution JSON on stdin\n";
+        std::cerr << "wolframtas_solver expected approximate solution JSON on stdin\n";
         return 1;
     }
 
     // Placeholder output until the exact movement solver owns JSON parsing.
     // The angle helpers are compiled here now so the first exact behavior has tests.
-    const int yaw_index = wolftas::degrees_to_index(0.0);
-    const int pitch_index = wolftas::degrees_to_index(0.0);
-    const double yaw = wolftas::index_to_degrees(yaw_index);
-    const double pitch = wolftas::index_to_degrees(pitch_index);
+    const int yaw_index = wolframtas::degrees_to_index(0.0);
+    const int pitch_index = wolframtas::degrees_to_index(0.0);
+    const double yaw = wolframtas::index_to_degrees(yaw_index);
+    const double pitch = wolframtas::index_to_degrees(pitch_index);
 
     std::cout
         << "{\n"

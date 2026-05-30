@@ -1,6 +1,6 @@
 # Architecture
 
-WolfTAS is centered on a three-step core pipeline. The Forge mod is a later
+WolframTAS is centered on a three-step core pipeline. The Forge mod is a later
 client around that pipeline, not the source of truth for the initial design.
 
 ## Core Pipeline
