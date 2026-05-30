@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wolftas.local/schemas/optimization_request.schema.json",
+  "title": "WolfTAS Optimization Request",
+  "type": "object",
+  "required": [
+    "version",
+    "minecraft_version",
+    "angle_domain",
+    "start_state",
+    "keyboard_inputs",
+    "constraints",
+    "objectives",
+    "solver"
+  ],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "minecraft_version": { "type": "string", "const": "1.8.9" },
+    "angle_domain": {
+      "type": "object",
+      "required": ["table_size"],
+      "properties": {
+        "table_size": { "type": "integer", "const": 16384 }
+      },
+      "additionalProperties": false
+    },
+    "start_state": { "$ref": "#/$defs/player_state" },
+    "keyboard_inputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/keyboard_input" }
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/constraint" }
+    },
+    "objectives": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/objective" }
+    },
+    "solver": {
+      "type": "object",
+      "required": ["max_ticks"],
+      "properties": {
+        "max_ticks": { "type": "integer", "minimum": 1 },
+        "timeout_seconds": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "player_state": {
+      "type": "object",
+      "required": ["position", "velocity", "yaw", "pitch", "on_ground"],
+      "properties": {
+        "position": { "$ref": "#/$defs/vec3" },
+        "velocity": { "$ref": "#/$defs/vec3" },
+        "yaw": { "type": "number" },
+        "pitch": { "type": "number" },
+        "on_ground": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "keyboard_input": {
+      "type": "object",
+      "required": ["tick", "forward", "strafe", "jump", "sneak", "sprint"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "forward": { "type": "integer", "minimum": -1, "maximum": 1 },
+        "strafe": { "type": "integer", "minimum": -1, "maximum": 1 },
+        "jump": { "type": "boolean" },
+        "sneak": { "type": "boolean" },
+        "sprint": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "constraint": {
+      "type": "object",
+      "required": ["id", "type", "tick"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "tick": { "type": "integer", "minimum": 0 },
+        "parameters": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "objective": {
+      "type": "object",
+      "required": ["id", "type", "weight"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "weight": { "type": "number" },
+        "parameters": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

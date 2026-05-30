@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "minecraft_version": "1.8.9",
+  "angle_domain": {
+    "table_size": 16384
+  },
+  "start_state": {
+    "position": { "x": 0.0, "y": 64.0, "z": 0.0 },
+    "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": true
+  },
+  "keyboard_inputs": [
+    { "tick": 0, "forward": 1, "strafe": 0, "jump": true, "sneak": false, "sprint": true },
+    { "tick": 1, "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }
+  ],
+  "constraints": [
+    {
+      "id": "land_on_target",
+      "type": "position_inside_box",
+      "tick": 20,
+      "parameters": {
+        "min": { "x": 3.0, "y": 64.0, "z": 0.0 },
+        "max": { "x": 4.0, "y": 65.0, "z": 1.0 }
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "id": "minimize_yaw_change",
+      "type": "minimize_total_angle_delta",
+      "weight": 1.0,
+      "parameters": {}
+    }
+  ],
+  "solver": {
+    "max_ticks": 20,
+    "timeout_seconds": 10.0
+  }
+}

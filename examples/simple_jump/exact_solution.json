@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "status": "solved",
+  "angles_discrete": [
+    { "tick": 0, "yaw_index": 0, "pitch_index": 0, "yaw_degrees": 0.0, "pitch_degrees": 0.0 },
+    { "tick": 1, "yaw_index": 0, "pitch_index": 0, "yaw_degrees": 0.0, "pitch_degrees": 0.0 }
+  ],
+  "states_exact": [],
+  "macro_rows": [
+    { "tick": 0, "yaw": 0.0, "pitch": 0.0, "forward": 1, "strafe": 0, "jump": true, "sneak": false, "sprint": true },
+    { "tick": 1, "yaw": 0.0, "pitch": 0.0, "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }
+  ],
+  "diagnostics": {
+    "fixture": true
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wolftas.local/schemas/exact_solution.schema.json",
+  "title": "WolfTAS Exact Solution",
+  "type": "object",
+  "required": ["version", "status", "angles_discrete", "states_exact", "macro_rows", "diagnostics"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "status": { "type": "string", "enum": ["solved", "unsolved", "error"] },
+    "angles_discrete": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/discrete_angle" }
+    },
+    "states_exact": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/exact_state" }
+    },
+    "macro_rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/macro_row" }
+    },
+    "diagnostics": { "type": "object" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3_string": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "string" },
+        "y": { "type": "string" },
+        "z": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "discrete_angle": {
+      "type": "object",
+      "required": ["tick", "yaw_index", "pitch_index", "yaw_degrees", "pitch_degrees"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "yaw_index": { "type": "integer", "minimum": 0, "maximum": 16383 },
+        "pitch_index": { "type": "integer", "minimum": 0, "maximum": 16383 },
+        "yaw_degrees": { "type": "number" },
+        "pitch_degrees": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "exact_state": {
+      "type": "object",
+      "required": ["tick", "position", "velocity", "on_ground"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "position": { "$ref": "#/$defs/vec3_string" },
+        "velocity": { "$ref": "#/$defs/vec3_string" },
+        "on_ground": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "macro_row": {
+      "type": "object",
+      "required": ["tick", "yaw", "pitch", "forward", "strafe", "jump", "sneak", "sprint"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "yaw": { "type": "number" },
+        "pitch": { "type": "number" },
+        "forward": { "type": "integer", "minimum": -1, "maximum": 1 },
+        "strafe": { "type": "integer", "minimum": -1, "maximum": 1 },
+        "jump": { "type": "boolean" },
+        "sneak": { "type": "boolean" },
+        "sprint": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

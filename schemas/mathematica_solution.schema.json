@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wolftas.local/schemas/mathematica_solution.schema.json",
+  "title": "WolfTAS Mathematica Approximate Solution",
+  "type": "object",
+  "required": ["version", "status", "objective_value", "angles", "states", "diagnostics"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "status": { "type": "string", "enum": ["optimal", "feasible", "infeasible", "error"] },
+    "objective_value": { "type": ["number", "null"] },
+    "angles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/angle" }
+    },
+    "states": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/state" }
+    },
+    "diagnostics": { "type": "object" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "angle": {
+      "type": "object",
+      "required": ["tick", "yaw", "pitch"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "yaw": { "type": "number" },
+        "pitch": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "state": {
+      "type": "object",
+      "required": ["tick", "position", "velocity", "on_ground"],
+      "properties": {
+        "tick": { "type": "integer", "minimum": 0 },
+        "position": { "$ref": "#/$defs/vec3" },
+        "velocity": { "$ref": "#/$defs/vec3" },
+        "on_ground": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
