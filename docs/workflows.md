@@ -5,12 +5,17 @@
 Current priority order:
 
 1. Define the Mathematica input contract from the actual Mathematica needs.
-2. Define the exact solver input contract from the original inputs plus
-   Mathematica angles.
+2. Define the exact solver input contract from the optimizer model plus the
+   selected Mathematica movement directions.
 3. Document the existing external macro-tool CSV output format.
 4. Implement the Python orchestrator so it converts a problem definition into a
    macro CSV by running Mathematica and the C++ exact solver.
 5. Return to Forge mod GUI/in-game quality-of-life features later.
+
+The first two contracts now have v1 low-level schemas:
+
+- `schemas/mathematica_input.schema.json`
+- `schemas/exact_solver_input.schema.json`
 
 Do not expand the Forge mod until the core contracts and orchestrator flow are
 stable.
@@ -38,6 +43,11 @@ Important timing rules learned so far:
 - Wall hits are approximated by fixing a hit tick, re-anchoring coordinates at
   the wall contact point, and canceling only the blocked axis via `Imux` or
   `Imuz`. For an X wall, set `Imux[[m1]] = 0` and leave `Imuz` unchanged.
+- Momentum threshold is applied independently to X/Z components after
+  slipperiness. An inertia-hit tick adds two linear per-axis post-retention
+  bounds and zeros the matching `Imux`/`Imuz` array entry. An inertia-avoid tick
+  specifies `positive` or `negative` direction, adds one signed lower-bound
+  constraint, and keeps the array unchanged.
 - Player-center wall/landing calculations use half-width `0.3`. A block
   `[b, b+1]` overlaps the player center range `[b - 0.3, b + 1.3]`.
 - If sprint is held and the player hits a wall for only one airborne tick, use
@@ -75,6 +85,46 @@ The Wolfram app kernel path on this Mac is:
 /Applications/Wolfram.app/Contents/MacOS/WolframKernel
 ```
 
+The JSON-driven optimizer entrypoint is:
+
+```sh
+wolframscript -file mathematica/optimize.wls examples/simple_jump/mathematica_input.json
+```
+
+It reads the v1 Mathematica input schema and prints a single RawJSON object to
+stdout. Movement directions are approximate optimizer angles, not Minecraft yaw.
+
+The wall/ladder fixture exercises separated `Imux`/`Imuz` and `Mmux` component
+overrides:
+
+```sh
+wolframscript -file mathematica/optimize.wls examples/simple_jump/wall_ladder_mathematica_input.json
+```
+
+The inertia-threshold fixture exercises generated hit/avoid constraints:
+
+```sh
+wolframscript -file mathematica/optimize.wls examples/simple_jump/inertia_mathematica_input.json
+```
+
+The Python orchestrator can also render an inspectable Wolfram script from a
+Mathematica input schema file:
+
+```sh
+PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator render-mathematica \
+  examples/involved_mathematica_input.json \
+  --out examples/involved_from_schema.wls
+```
+
+The orchestrator runs the canonical Mathematica optimizer and writes the
+approximate solution JSON with:
+
+```sh
+PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator run-mathematica \
+  examples/simple_jump/mathematica_input.json \
+  --approx-out /tmp/wolframtas_approx_solution.json
+```
+
 ## Python Orchestrator Fixture
 
 The initial orchestrator supports a fixture-friendly no-op mode:
@@ -87,13 +137,24 @@ python3 -m wolframtas_orchestrator examples/simple_jump/request.json \
 
 ## C++ Solver
 
-The solver is scaffolded as a small CLI that reads approximate solution JSON
-from stdin and writes exact solution JSON to stdout.
+The solver is a small CLI that reads exact-solver input JSON from stdin,
+simulates the horizontal movement model, and writes exact solution JSON to
+stdout. New exact-solver inputs should provide `movement_plan`; the solver
+derives supported `Imux`/`Imuz`/`Mmu` values from that semantic input and uses
+legacy arrays only as a compatibility fallback. It keeps movement directions in
+radians internally, applies
+Minecraft-style float32 angle indexing for `mcsin`/`mccos`, computes the indexed
+sine value with `std::sin` on demand, and converts to degrees only for
+diagnostics and macro-relative yaw output.
+
+The current reduced horizontal recurrence is checked against the anon-noob
+mothball `player.py` behavior with the flat sprintjump no-45 fixture.
 
 ```sh
 cmake -S solver -B solver/build
 cmake --build solver/build
-solver/build/wolframtas_solver < examples/simple_jump/approx_solution.json
+solver/build/wolframtas_solver < examples/simple_jump/exact_solver_input.json
+solver/build/wolframtas_solver < examples/simple_jump/flat_sprintjump_exact_solver_input.json
 ```
 
 ## Forge Mod

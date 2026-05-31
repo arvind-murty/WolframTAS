@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "name": "simple_water_transition",
+  "slot_indexing": "1_based",
+  "n": 17,
+  "constants": {
+    "m1": 17,
+    "xoff": 681.30043298,
+    "zoff": -246.7
+  },
+  "arrays": {
+    "imux": [0.91, 0.91, 0.91, 0.91, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    "imuz": [0.91, 0.91, 0.91, 0.91, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    "mmu": [0.02, 0.02, 0.026, 0.026, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02]
+  },
+  "component_overrides": [],
+  "objective": {
+    "sense": "maximize",
+    "expression": "Z[F, m1] - Z[F, m1 - 1]"
+  },
+  "constraints": [
+    {
+      "id": "x_wall_edge",
+      "expression": "X[F, 0] - X[F, m1] >= xoff - 680.3"
+    },
+    {
+      "id": "z_lower",
+      "expression": "Z[F, 0] - Z[F, m1] <= zoff + 245.6999"
+    },
+    {
+      "id": "z_upper",
+      "expression": "Z[F, 0] - Z[F, m1] >= zoff + 245.699"
+    }
+  ],
+  "optimizer": {
+    "accuracy_goal": 20,
+    "precision_goal": 20
+  },
+  "annotations": [
+    {
+      "kind": "source",
+      "description": "Equivalent to examples/mathematica_sim.wls"
+    }
+  ]
+}

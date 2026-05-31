@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wolframtas.local/schemas/movement_plan.schema.json",
+  "title": "WolframTAS Movement Plan",
+  "type": "object",
+  "required": ["version", "slot_indexing", "slots"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "slot_indexing": { "type": "string", "const": "1_based" },
+    "slots": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/movement_slot" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "movement_slot": {
+      "type": "object",
+      "required": ["slot", "kind"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["movement", "init"] },
+        "slot": { "type": "integer", "minimum": 1 },
+        "controls": { "$ref": "#/$defs/controls" },
+        "acceleration": { "$ref": "#/$defs/acceleration" },
+        "retention": { "$ref": "#/$defs/retention" },
+        "velocity": { "$ref": "#/$defs/vec2" },
+        "imux": { "type": "number" },
+        "imuz": { "type": "number" },
+        "component_overrides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/component_override" }
+        },
+        "annotations": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "movement" } }, "required": ["kind"] },
+          "then": { "required": ["controls", "acceleration", "retention"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "init" } }, "required": ["kind"] },
+          "then": { "required": ["velocity", "imux", "imuz"] }
+        }
+      ]
+    },
+    "vec2": {
+      "type": "object",
+      "required": ["x", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "controls": {
+      "type": "object",
+      "required": ["forward", "strafe", "jump", "sneak", "sprint"],
+      "properties": {
+        "forward": { "type": "integer", "minimum": -1, "maximum": 1 },
+        "strafe": { "type": "integer", "minimum": -1, "maximum": 1 },
+        "jump": { "type": "boolean" },
+        "sneak": { "type": "boolean" },
+        "sprint": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "acceleration": {
+      "type": "object",
+      "required": ["medium"],
+      "properties": {
+        "medium": { "type": "string", "enum": ["ground", "air", "water", "lava"] },
+        "input": { "type": "string", "enum": ["no45_forward"] }
+      },
+      "additionalProperties": false
+    },
+    "retention": {
+      "type": "object",
+      "required": ["medium"],
+      "properties": {
+        "medium": { "type": "string", "enum": ["flat_ground", "air", "water", "lava", "none"] },
+        "slipperiness": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "component_override": {
+      "type": "object",
+      "required": ["target", "value"],
+      "properties": {
+        "target": { "type": "string", "enum": ["mmux", "mmuz"] },
+        "value": { "type": "number" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

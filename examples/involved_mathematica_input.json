@@ -1,0 +1,515 @@
+{
+  "version": 1,
+  "name": "involved_sim_port",
+  "slot_indexing": "1_based",
+  "n": 94,
+  "constants": {
+    "m1": 2,
+    "m2": 14,
+    "m3": 24,
+    "m4": 26,
+    "m5": 28,
+    "m6": 30,
+    "m7": 32,
+    "m8": 41,
+    "m8a": 41,
+    "m8b": 43,
+    "m8c": 49,
+    "m9": 55,
+    "m9a": 56,
+    "m9b": 62,
+    "m10": 69,
+    "m10a": 70,
+    "m10b": 74,
+    "m11": 79,
+    "m11a": 92,
+    "m12": 94,
+    "zoff": -219.09404548,
+    "xoff": 667.44389288
+  },
+  "arrays": {
+    "imux": [
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91
+    ],
+    "imuz": [
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.546,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91,
+      0.91
+    ],
+    "mmu": [
+      0.25118488,
+      0.02548,
+      0.02548,
+      0.3274,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.3274,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.02548,
+      0.3274,
+      0.02548,
+      0.3274,
+      0.02548,
+      0.3274,
+      0.02548,
+      0.3274,
+      0.02548,
+      0.3274,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.3274,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.3274,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.13,
+      0.3274,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.3274,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026,
+      0.026
+    ]
+  },
+  "component_overrides": [],
+  "objective": {
+    "sense": "maximize",
+    "expression": "X[F, m12]"
+  },
+  "constraints": [
+    {
+      "id": "fixed_initial_direction",
+      "expression": "F[[1]] == -145.10517607*Pi/180"
+    },
+    {
+      "id": "m1_z_upper",
+      "expression": "Z[F, 0] - Z[F, m1] <= zoff + 219.4874"
+    },
+    {
+      "id": "m1_x_lower",
+      "expression": "X[F, 0] - X[F, m1] >= xoff - 667.2999"
+    },
+    {
+      "id": "m3_x_lower",
+      "expression": "X[F, 0] - X[F, m3] >= xoff - 666.2999"
+    },
+    {
+      "id": "m4_x_lower",
+      "expression": "X[F, 0] - X[F, m4] >= xoff - 666.2999"
+    },
+    {
+      "id": "m4_plus_1_z_upper",
+      "expression": "Z[F, 0] - Z[F, m4 + 1] <= zoff + 227.6999"
+    },
+    {
+      "id": "m5_plus_1_x_lower",
+      "expression": "X[F, 0] - X[F, m5 + 1] >= xoff - 666.6999"
+    },
+    {
+      "id": "m5_plus_1_z_upper",
+      "expression": "Z[F, 0] - Z[F, m5 + 1] <= zoff + 228.2999"
+    },
+    {
+      "id": "m6_z_lower",
+      "expression": "Z[F, 0] - Z[F, m6] >= zoff + 228.3001"
+    },
+    {
+      "id": "m6_plus_1_z_upper",
+      "expression": "Z[F, 0] - Z[F, m6 + 1] <= zoff + 228.6999"
+    },
+    {
+      "id": "m7_z_lower",
+      "expression": "Z[F, 0] - Z[F, m7] >= zoff + 228.7001"
+    },
+    {
+      "id": "m7_x_lower",
+      "expression": "X[F, 0] - X[F, m7] >= xoff - 668.2999"
+    },
+    {
+      "id": "m8_x_upper",
+      "expression": "X[F, 0] - X[F, m8] <= xoff - 671.7002"
+    },
+    {
+      "id": "m8a_z_upper",
+      "expression": "Z[F, 0] - Z[F, m8a] <= zoff + 230.2998"
+    },
+    {
+      "id": "m8b_z_lower",
+      "expression": "Z[F, 0] - Z[F, m8b] >= zoff + 230.3002"
+    },
+    {
+      "id": "m8b_x_lower",
+      "expression": "X[F, 0] - X[F, m8b] >= xoff - 672.6998"
+    },
+    {
+      "id": "m8c_minus_1_z_lower",
+      "expression": "Z[F, 0] - Z[F, m8c - 1] >= zoff + 230.3002"
+    },
+    {
+      "id": "m8c_x_upper",
+      "expression": "X[F, 0] - X[F, m8c] <= xoff - 674.3002"
+    },
+    {
+      "id": "m9_z_upper",
+      "expression": "Z[F, 0] - Z[F, m9] <= zoff + 229.4873"
+    },
+    {
+      "id": "m9a_z_lower",
+      "expression": "Z[F, 0] - Z[F, m9a] >= zoff + 229.3002"
+    },
+    {
+      "id": "m9a_x_lower",
+      "expression": "X[F, 0] - X[F, m9a] >= xoff - 676.2998"
+    },
+    {
+      "id": "m9b_z_upper",
+      "expression": "Z[F, 0] - Z[F, m9b] <= zoff + 228.6998"
+    },
+    {
+      "id": "m9b_x_lower",
+      "expression": "X[F, 0] - X[F, m9b] >= xoff - 678.1373"
+    },
+    {
+      "id": "m10_x_upper",
+      "expression": "X[F, 0] - X[F, m10] <= xoff - 680.0753"
+    },
+    {
+      "id": "m10a_x_lower",
+      "expression": "X[F, 0] - X[F, m10a] >= xoff - 680.9247"
+    },
+    {
+      "id": "m10a_z_upper",
+      "expression": "Z[F, 0] - Z[F, m10a] <= zoff + 228.6122"
+    },
+    {
+      "id": "m10b_x_upper",
+      "expression": "X[F, 0] - X[F, m10b] <= xoff - 681.3003"
+    },
+    {
+      "id": "m10b_minus_1_z_lower",
+      "expression": "Z[F, 0] - Z[F, m10b - 1] >= zoff + 228.3003"
+    },
+    {
+      "id": "m11_x_lower",
+      "expression": "X[F, 0] - X[F, m11] >= xoff - 681.6122"
+    },
+    {
+      "id": "m11_z_lower",
+      "expression": "Z[F, 0] - Z[F, m11] >= zoff + 227.0747"
+    },
+    {
+      "id": "m11a_x_lower",
+      "expression": "X[F, 0] - X[F, m11a] >= xoff - 684.6997"
+    },
+    {
+      "id": "m11a_z_upper",
+      "expression": "Z[F, 0] - Z[F, m11a] <= zoff + 224.6997"
+    },
+    {
+      "id": "x_inertia_raw_upper",
+      "expression": "X[F, m2 + 8] - X[F, m2 + 9] <= 0.0054"
+    },
+    {
+      "id": "x_inertia_raw_lower",
+      "expression": "X[F, m2 + 9] - X[F, m2 + 8] <= 0.0054"
+    },
+    {
+      "id": "z_inertia_raw_upper_m8",
+      "expression": "Z[F, m8 + 4] - Z[F, m8 + 5] <= 0.0054"
+    },
+    {
+      "id": "z_inertia_raw_lower_m8",
+      "expression": "Z[F, m8 + 5] - Z[F, m8 + 4] <= 0.0054"
+    },
+    {
+      "id": "z_inertia_raw_upper_m9",
+      "expression": "Z[F, m9 + 11] - Z[F, m9 + 12] <= 0.0054"
+    },
+    {
+      "id": "z_inertia_raw_lower_m9",
+      "expression": "Z[F, m9 + 12] - Z[F, m9 + 11] <= 0.0054"
+    }
+  ],
+  "optimizer": {
+    "accuracy_goal": 20,
+    "precision_goal": 20
+  },
+  "annotations": [
+    {
+      "kind": "source",
+      "path": "examples/involved_sim.wls"
+    },
+    {
+      "kind": "note",
+      "description": "Plotting, point formatting, turn calculations, and the commented m12 Z constraint are intentionally omitted."
+    },
+    {
+      "kind": "inertia-port",
+      "description": "The source script's 0.0054 raw displacement threshold pairs are preserved as direct constraints for this close port."
+    },
+    {
+      "kind": "inertia-hit",
+      "axis": "x",
+      "slot": 23,
+      "description": "imux[23] is zero in the source arrays."
+    },
+    {
+      "kind": "inertia-hit",
+      "axis": "z",
+      "slot": 46,
+      "description": "imuz[46] is zero in the source arrays."
+    },
+    {
+      "kind": "inertia-hit",
+      "axis": "z",
+      "slot": 67,
+      "description": "imuz[67] is zero in the source arrays."
+    }
+  ]
+}

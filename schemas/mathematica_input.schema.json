@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wolframtas.local/schemas/mathematica_input.schema.json",
+  "title": "WolframTAS Mathematica Input",
+  "type": "object",
+  "required": ["version", "slot_indexing", "n", "arrays", "objective"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "name": { "type": "string" },
+    "slot_indexing": { "type": "string", "const": "1_based" },
+    "n": { "type": "integer", "minimum": 1 },
+    "constants": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "arrays": {
+      "type": "object",
+      "required": ["imux", "imuz", "mmu"],
+      "properties": {
+        "imux": { "$ref": "#/$defs/number_array" },
+        "imuz": { "$ref": "#/$defs/number_array" },
+        "mmu": { "$ref": "#/$defs/number_array" }
+      },
+      "additionalProperties": false
+    },
+    "component_overrides": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component_override" }
+    },
+    "inertia_events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/inertia_event" }
+    },
+    "objective": {
+      "type": "object",
+      "required": ["sense", "expression"],
+      "properties": {
+        "sense": { "type": "string", "enum": ["maximize", "minimize"] },
+        "expression": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/expression_constraint" }
+    },
+    "optimizer": {
+      "type": "object",
+      "properties": {
+        "accuracy_goal": { "type": "number" },
+        "precision_goal": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "number_array": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "number" }
+    },
+    "component_override": {
+      "type": "object",
+      "required": ["target", "slot", "value"],
+      "properties": {
+        "target": { "type": "string", "enum": ["mmux", "mmuz"] },
+        "slot": { "type": "integer", "minimum": 1 },
+        "value": { "type": "number" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "inertia_event": {
+      "type": "object",
+      "required": ["id", "type", "axis", "slot", "retention_multiplier"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["hit", "avoid"] },
+        "axis": { "type": "string", "enum": ["x", "z"] },
+        "direction": { "type": "string", "enum": ["positive", "negative"] },
+        "slot": { "type": "integer", "minimum": 1 },
+        "retention_multiplier": { "type": "number" },
+        "threshold": { "type": "number", "exclusiveMinimum": 0 },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "avoid" } }, "required": ["type"] },
+          "then": { "required": ["direction"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "hit" } }, "required": ["type"] },
+          "then": { "not": { "required": ["direction"] } }
+        }
+      ]
+    },
+    "expression_constraint": {
+      "type": "object",
+      "required": ["id", "expression"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "expression": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

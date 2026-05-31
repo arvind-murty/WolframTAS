@@ -5,7 +5,7 @@
 
 namespace wolframtas {
 
-constexpr std::int32_t kAngleTableSize = 16384;
+constexpr std::int32_t kAngleTableSize = 65536;
 
 inline std::int32_t degrees_to_index(double degrees) {
     const double wrapped = std::fmod(std::fmod(degrees, 360.0) + 360.0, 360.0);

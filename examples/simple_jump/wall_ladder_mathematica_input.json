@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "name": "wall_ladder_override_example",
+  "slot_indexing": "1_based",
+  "n": 13,
+  "constants": {
+    "m1": 5,
+    "m2": 12,
+    "xoff": 1520.3,
+    "zoff": 933.3,
+    "xwall": 1520.7
+  },
+  "arrays": {
+    "imux": [0.91, 0.546, 0.91, 0.91, 0.0, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91],
+    "imuz": [0.91, 0.546, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91],
+    "mmu": [0.2, 0.3274, 0.02548, 0.02548, 0.02548, 0.02548, 0.0196, 0.02548, 0.02548, 0.02548, 0.02548, 0.02548, 0.02548]
+  },
+  "component_overrides": [
+    {
+      "target": "mmux",
+      "slot": 9,
+      "value": -0.15,
+      "reason": "ladder_clamp"
+    }
+  ],
+  "objective": {
+    "sense": "maximize",
+    "expression": "Z[F, m2]"
+  },
+  "constraints": [
+    {
+      "id": "hit_x_wall",
+      "expression": "X[F, m1] >= xwall - xoff"
+    },
+    {
+      "id": "land_x_overlap_from_east",
+      "expression": "X[F, m1] - X[F, m2] >= 0.4"
+    }
+  ],
+  "optimizer": {
+    "accuracy_goal": 12,
+    "precision_goal": 12
+  },
+  "annotations": [
+    {
+      "kind": "wall",
+      "slot": 5,
+      "axis": "x",
+      "description": "X velocity canceled by imux slot 5"
+    },
+    {
+      "kind": "ladder",
+      "slot": 9,
+      "axis": "x",
+      "description": "Mmux slot 9 hardcoded to -0.15"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "name": "flat-sprintjump-no45",
+  "slot_indexing": "1_based",
+  "n": 12,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": true
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      {
+        "slot": 1,
+        "kind": "init",
+        "velocity": { "x": 0.0, "z": 0.0 },
+        "imux": 0.91,
+        "imuz": 0.91
+      },
+      {
+        "slot": 2,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": true, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "ground", "input": "no45_forward" },
+        "retention": { "medium": "flat_ground", "slipperiness": 0.6 }
+      },
+      {
+        "slot": 3,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 4,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 5,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 6,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 7,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 8,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 9,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 10,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 11,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      },
+      {
+        "slot": 12,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      }
+    ]
+  },
+  "derived_model": {
+    "diagnostics": {
+      "description": "The exact solver derives Imux, Imuz, and Mmu from movement_plan. Slot 1 is a zero init velocity with air retention; slot 2 is the flat-ground sprint-jump tick; later slots are airborne sprint ticks."
+    }
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.0,
+    "movement_directions": [
+      { "slot": 1, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 2, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 3, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 4, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 5, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 6, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 7, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 8, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 9, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 10, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 11, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 12, "radians": 0.0, "degrees": 0.0 }
+    ],
+    "diagnostics": {
+      "fixture": true
+    }
+  }
+}

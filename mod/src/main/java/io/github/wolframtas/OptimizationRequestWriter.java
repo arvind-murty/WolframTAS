@@ -25,7 +25,7 @@ public final class OptimizationRequestWriter {
         return "{\n"
             + "  \"version\": 1,\n"
             + "  \"minecraft_version\": \"1.8.9\",\n"
-            + "  \"angle_domain\": { \"table_size\": 16384 },\n"
+            + "  \"angle_domain\": { \"table_size\": 65536 },\n"
             + "  \"start_state\": {\n"
             + "    \"position\": { \"x\": 0.0, \"y\": 64.0, \"z\": 0.0 },\n"
             + "    \"velocity\": { \"x\": 0.0, \"y\": 0.0, \"z\": 0.0 },\n"

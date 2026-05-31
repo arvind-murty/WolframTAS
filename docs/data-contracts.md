@@ -6,28 +6,74 @@ solver requirements, and existing macro CSV format are known.
 
 ## Mathematica Input
 
-Produced by a user-authored file or future mod UI. Consumed by the Python
-orchestrator and Mathematica.
+Produced by the Python orchestrator from a movement plan, or hand-authored only
+for low-level/debug fixtures. Consumed by Mathematica.
 
-Status: not finalized.
+The Python orchestrator is responsible for rendering this schema into an
+inspectable/runnable Wolfram script when needed. Do not maintain separate
+one-off schema conversion scripts.
 
-Expected role:
+Schema: `schemas/mathematica_input.schema.json`
 
-- Describe fixed keyboard inputs.
-- Describe constraints.
-- Describe objective functions.
-- Include any initial Minecraft movement state Mathematica needs.
-- Avoid fields that only matter to the Forge GUI.
+Status: v1 low-level generated/debug contract.
+
+This contract is Mathematica-ready rather than gameplay-event based. It stores
+the numeric arrays and expressions that the optimizer should use directly. For
+new route definitions, prefer the movement plan contract and let the
+orchestrator derive these arrays:
+
+- `n`: number of optimized movement-direction slots.
+- `arrays.imux`, `arrays.imuz`: horizontal velocity retention multipliers.
+- `arrays.mmu`: horizontal acceleration magnitudes, including `init` when chaining.
+- `constants`: numeric symbols available to objective and constraint expressions.
+- `component_overrides`: fixed `Mmux`/`Mmuz` slot overrides for ladder-style clamps.
+- `inertia_events`: momentum-threshold helper events. Events are axis-specific
+  and use an explicit `retention_multiplier` because hit events also zero the
+  stored `Imux`/`Imuz` array entry. `hit` expands into two linear post-retention
+  bounds; `avoid` requires `direction` and emits one signed lower bound.
+- `objective.expression`: Mathematica expression string.
+- `constraints[*].expression`: Mathematica expression strings.
+
+Slots are 1-based to match Mathematica indexing.
+
+## Movement Plan
+
+Produced by a user-authored file, future mod UI, or route builder. Consumed by
+the Python orchestrator and the C++ exact solver.
+
+Schema: `schemas/movement_plan.schema.json`
+
+Status: v1 source-of-truth movement contract for supported exact-solver cases.
+
+The movement plan records semantic slot inputs instead of derived `Mmu`/`Imu`
+numbers:
+
+- `slots[*].kind`: either `init` for an authoritative incoming horizontal
+  velocity slot or `movement` for a normal Minecraft movement slot.
+- `init` slots provide `velocity.x`, `velocity.z`, `imux`, and `imuz` directly.
+  The velocity is not validated against keyboard movement; its horizontal
+  magnitude is plugged in as the first `Mmu` entry, and its direction is carried
+  by the slot's movement-direction angle.
+- `slots[*].controls`: fixed keyboard inputs for the slot.
+- `slots[*].acceleration.medium`: the movement acceleration context, currently
+  supporting the flat sprint-jump/no-45 cases used by fixtures.
+- `slots[*].retention.medium`: the post-move retention context. This is
+  separate from acceleration so unusual fixed-tick cases can override drag
+  provenance without changing the acceleration path.
+
+The orchestrator derives Mathematica `arrays.imux`, `arrays.imuz`, and
+`arrays.mmu` directly from this plan. The exact solver independently derives
+the same physical values rather than trusting rounded JSON constants.
 
 ## Mathematica Output
 
 Produced by Mathematica. Consumed by the Python orchestrator.
 
-Status: partially known.
+Status: v1 implemented by `mathematica/optimize.wls`.
 
 Expected role:
 
-- Return approximate yaw/pitch angles.
+- Return approximate movement-direction angles.
 - Include enough status/diagnostic information for the orchestrator to decide
   whether to continue to exact solving.
 
@@ -35,13 +81,29 @@ Expected role:
 
 Produced by the Python orchestrator. Consumed by the C++ exact solver.
 
-Status: not finalized.
+Schema: `schemas/exact_solver_input.schema.json`
 
-Expected role:
+Status: v1 input-first contract with low-level compatibility.
 
-- Include original fixed keyboard inputs.
-- Include Mathematica approximate angles.
-- Include enough initial state and solver settings for exact Minecraft movement.
+New exact-solver inputs carry the movement plan and the selected optimizer
+result:
+
+- `n`: number of movement-direction slots.
+- `angle_domain.table_size`: Minecraft's discrete `2^16` angle table.
+- `initial_state`: exact solver starting position and velocity.
+- `movement_plan`: semantic movement slots used to derive exact movement.
+- `optimal_solution.movement_directions`: Mathematica's chosen movement
+  directions, indexed by 1-based slot. The exact solver consumes the radians
+  value as the authoritative angle; degrees are retained for diagnostics and
+  human inspection.
+- `optimal_solution.points`: optional Mathematica model points for diagnostics.
+- `derived_model`: optional generated Mathematica arrays, constraints, and
+  diagnostics. The exact solver may use this as a compatibility fallback, but
+  movement-plan inputs should not depend on it for motion.
+
+Legacy top-level `arrays`, `component_overrides`, `inertia_events`, and
+`constraints` are still accepted for existing low-level fixtures, but new
+fixtures should not hand-author them as the primary movement source.
 
 Movement-state timing rules that the contracts must be able to represent:
 
@@ -54,12 +116,37 @@ Movement-state timing rules that the contracts must be able to represent:
   sneaking, or a wall-hit tick.
 - Water/lava movement still has 45/no-45 input behavior, even though normal
   sustained sprinting does not apply there.
+- Momentum threshold is applied independently for X and Z after slipperiness.
+  If the end-of-tick component is below the threshold, that component is zeroed;
+  v1 models this as a post-retention threshold constraint plus an explicit zero
+  in the affected `Imux` or `Imuz` for inertia-hit events.
+
+Exact-solver numeric policy:
+
+- Position and velocity state are stored as double/float64 in the current
+  reduced horizontal simulation to match anon-noob mothball `player.py` under
+  NumPy 1.26 scalar promotion.
+- Movement-plan inputs derive acceleration and retention values through the same
+  float32 movement-intermediate operation sequences used by the reference
+  implementation before applying them to the double state.
+- Legacy low-level shorthand values such as `0.546`, `0.3274`, and `0.02548`
+  are normalized through those paths only as a compatibility fallback.
+- Movement direction stays in radians internally. The solver flips sign from
+  Mathematica movement direction to Minecraft yaw radians.
+- `mcsin`/`mccos` use Minecraft's float32 angle indexing formulas with a
+  65536-entry domain, but currently compute the indexed sine value using
+  `std::sin` on demand instead of storing a table.
+- Degree conversion is output-only for `angles_discrete` diagnostics and macro
+  relative yaw deltas.
 
 ## Macro CSV
 
 Produced by the C++ exact solver.
 
-Status: not finalized.
+Schema notes: `schemas/macro_csv.md`
 
-Use the existing external macro-tool CSV format first. A WolframTAS-native macro
-format can be added later if needed.
+Status: external macro-tool format documented.
+
+The CSV columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`. `W/A/S/D` are movement
+keys, `P` is sprint, `N` is sneak, `J` is jump, `YAW` and `PITCH` are relative
+degree deltas, `L/R` are click fields, and `COUNT` is the row repeat count.

@@ -7,8 +7,17 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .mathematica_script import render_mathematica_script
+
 
 def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+    if argv and argv[0] == "render-mathematica":
+        return render_mathematica_command(argv[1:])
+    if argv and argv[0] == "run-mathematica":
+        return run_mathematica_command(argv[1:])
+
     parser = argparse.ArgumentParser(description="Run the WolframTAS optimization pipeline.")
     parser.add_argument("request", type=Path, help="Optimization request JSON from the mod.")
     parser.add_argument("--mathematica-command", nargs="+", help="Command that emits approximate solution JSON.")
@@ -36,6 +45,50 @@ def main(argv: list[str] | None = None) -> int:
     args.exact_solution_out.parent.mkdir(parents=True, exist_ok=True)
     args.exact_solution_out.write_text(json.dumps(exact_solution, indent=2) + "\n", encoding="utf-8")
     return 0
+
+
+def render_mathematica_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Render a Mathematica input schema file as a Wolfram script.")
+    parser.add_argument("input", type=Path, help="Mathematica input schema JSON.")
+    parser.add_argument("--out", type=Path, required=True, help="Path for generated .wls script.")
+    args = parser.parse_args(argv)
+
+    problem = read_json(args.input)
+    script = render_mathematica_script(problem, source_name=str(args.input))
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(script, encoding="utf-8")
+    return 0
+
+
+def run_mathematica_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Run Mathematica on a Mathematica input schema file.")
+    parser.add_argument("input", type=Path, help="Mathematica input schema JSON.")
+    parser.add_argument("--approx-out", type=Path, required=True, help="Path for approximate solution JSON.")
+    parser.add_argument("--wolframscript", default="wolframscript", help="wolframscript executable path.")
+    parser.add_argument(
+        "--optimizer-script",
+        type=Path,
+        default=Path("mathematica/optimize.wls"),
+        help="Wolfram optimizer script to run with wolframscript -file.",
+    )
+    args = parser.parse_args(argv)
+
+    read_json(args.input)
+    approximate_solution = run_wolfram_file(args.wolframscript, args.optimizer_script, args.input)
+    args.approx_out.parent.mkdir(parents=True, exist_ok=True)
+    args.approx_out.write_text(json.dumps(approximate_solution, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def run_wolfram_file(wolframscript: str, optimizer_script: Path, input_path: Path) -> dict[str, Any]:
+    command = [wolframscript, "-file", str(optimizer_script), str(input_path)]
+    completed = subprocess.run(command, text=True, capture_output=True)
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip()
+        stdout = completed.stdout.strip()
+        detail = stderr or stdout or f"exit code {completed.returncode}"
+        raise RuntimeError(f"wolframscript failed: {detail}")
+    return parse_process_json(wolframscript, completed.stdout)
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -118,14 +171,18 @@ def fixture_exact_solution(approximate_solution: dict[str, Any], request: dict[s
         )
         macro_rows.append(
             {
-                "tick": tick,
+                "w": keyboard["forward"] > 0,
+                "a": keyboard["strafe"] > 0,
+                "s": keyboard["forward"] < 0,
+                "d": keyboard["strafe"] < 0,
+                "p": keyboard["sprint"],
+                "n": keyboard["sneak"],
+                "j": keyboard["jump"],
                 "yaw": yaw_degrees,
                 "pitch": pitch_degrees,
-                "forward": keyboard["forward"],
-                "strafe": keyboard["strafe"],
-                "jump": keyboard["jump"],
-                "sneak": keyboard["sneak"],
-                "sprint": keyboard["sprint"],
+                "l": 0,
+                "r": 0,
+                "count": 1,
             }
         )
 
@@ -151,11 +208,11 @@ def empty_keyboard(tick: int) -> dict[str, Any]:
 
 
 def degrees_to_index(degrees: float) -> int:
-    return round((degrees % 360.0) / 360.0 * 16384.0) % 16384
+    return round((degrees % 360.0) / 360.0 * 65536.0) % 65536
 
 
 def snap_degrees(degrees: float) -> float:
-    return degrees_to_index(degrees) * 360.0 / 16384.0
+    return degrees_to_index(degrees) * 360.0 / 65536.0
 
 
 if __name__ == "__main__":

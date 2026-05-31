@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "name": "inertia-threshold-smoke",
+  "slot_indexing": "1_based",
+  "n": 1,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "arrays": {
+    "imux": [0.0],
+    "imuz": [0.91],
+    "mmu": [0.001]
+  },
+  "component_overrides": [],
+  "inertia_events": [
+    {
+      "id": "x_inertia_hit_slot_1",
+      "type": "hit",
+      "axis": "x",
+      "slot": 1,
+      "retention_multiplier": 0.91,
+      "threshold": 0.005,
+      "reason": "X velocity is small enough to be thresholded, so imux[1] is zeroed."
+    },
+    {
+      "id": "z_inertia_avoid_slot_1",
+      "type": "avoid",
+      "axis": "z",
+      "direction": "positive",
+      "slot": 1,
+      "retention_multiplier": 0.91,
+      "threshold": 0.0005,
+      "reason": "Z velocity must remain above the threshold."
+    }
+  ],
+  "constraints": [],
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.001,
+    "movement_directions": [
+      {
+        "slot": 1,
+        "radians": 0.0,
+        "degrees": 0.0
+      }
+    ],
+    "points": [
+      {
+        "slot": 0,
+        "x": 0.0,
+        "z": 0.0
+      },
+      {
+        "slot": 1,
+        "x": 0.0,
+        "z": 0.001
+      }
+    ],
+    "diagnostics": {
+      "fixture": true
+    }
+  },
+  "annotations": [
+    {
+      "kind": "source",
+      "description": "Exact-solver input shape derived from inertia_mathematica_input.json plus Mathematica movement directions."
+    }
+  ]
+}

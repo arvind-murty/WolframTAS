@@ -12,7 +12,7 @@ The intended pipeline is:
 4. Mathematica emits an approximate solution.
 5. The orchestrator passes that solution to the C++ exact solver.
 6. The exact solver snaps/validates the route against Minecraft movement,
-   floating point behavior, and the `2^14` discrete angle table.
+   floating point behavior, and the `2^16` discrete angle table.
 7. The mod writes a macro CSV and can render the solved path in-game.
 
 ## Repo Layout

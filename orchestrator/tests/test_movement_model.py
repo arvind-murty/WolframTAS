@@ -1,0 +1,85 @@
+from __future__ import annotations
+
+from wolframtas_orchestrator.movement_model import (
+    air_retention,
+    air_sprint_no45_mmu,
+    air_walk_no45_mmu,
+    derive_movement_model,
+    derive_movement_arrays,
+    flat_ground_retention,
+    flat_sprint_jump_no45_mmu,
+    flat_walk_no45_mmu,
+)
+
+
+def test_known_no45_values_match_reference_paths() -> None:
+    assert flat_ground_retention() == 0.546000063419342
+    assert air_retention() == 0.9100000262260437
+    assert flat_sprint_jump_no45_mmu() == 0.32739998400211334
+    assert air_sprint_no45_mmu() == 0.0254799984395504
+    assert air_walk_no45_mmu() == 0.019600000232458115
+    assert flat_walk_no45_mmu() == 0.09800000488758087
+
+
+def test_derive_flat_sprintjump_arrays_from_movement_plan() -> None:
+    plan = {
+        "version": 1,
+        "slot_indexing": "1_based",
+        "slots": [
+            {
+                "slot": 1,
+                "kind": "init",
+                "velocity": {"x": 0.0, "z": 0.0},
+                "imux": air_retention(),
+                "imuz": air_retention(),
+            },
+            {
+                "slot": 2,
+                "kind": "movement",
+                "controls": {"forward": 1, "strafe": 0, "jump": True, "sneak": False, "sprint": True},
+                "acceleration": {"medium": "ground"},
+                "retention": {"medium": "flat_ground"},
+            },
+            {
+                "slot": 3,
+                "kind": "movement",
+                "controls": {"forward": 1, "strafe": 0, "jump": False, "sneak": False, "sprint": True},
+                "acceleration": {"medium": "air"},
+                "retention": {"medium": "air"},
+            },
+        ],
+    }
+
+    arrays = derive_movement_arrays(plan)
+
+    assert arrays["imux"] == [air_retention(), flat_ground_retention(), air_retention()]
+    assert arrays["imuz"] == [air_retention(), flat_ground_retention(), air_retention()]
+    assert arrays["mmu"] == [
+        0.0,
+        flat_sprint_jump_no45_mmu(),
+        air_sprint_no45_mmu(),
+    ]
+
+
+def test_derive_init_slot_as_first_mmu_entry() -> None:
+    plan = {
+        "version": 1,
+        "slot_indexing": "1_based",
+        "slots": [
+            {
+                "slot": 1,
+                "kind": "init",
+                "velocity": {"x": 0.125, "z": 0.25},
+                "imux": air_retention(),
+                "imuz": flat_ground_retention(),
+            }
+        ],
+    }
+
+    model = derive_movement_model(plan)
+
+    assert model["arrays"] == {
+        "imux": [air_retention()],
+        "imuz": [flat_ground_retention()],
+        "mmu": [0.2795084971874737],
+    }

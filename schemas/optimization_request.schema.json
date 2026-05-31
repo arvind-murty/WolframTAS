@@ -20,7 +20,7 @@
       "type": "object",
       "required": ["table_size"],
       "properties": {
-        "table_size": { "type": "integer", "const": 16384 }
+        "table_size": { "type": "integer", "const": 65536 }
       },
       "additionalProperties": false
     },
@@ -29,6 +29,7 @@
       "type": "array",
       "items": { "$ref": "#/$defs/keyboard_input" }
     },
+    "movement_plan": { "$ref": "movement_plan.schema.json" },
     "constraints": {
       "type": "array",
       "items": { "$ref": "#/$defs/constraint" }

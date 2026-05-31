@@ -7,13 +7,14 @@ it whenever stable technical decisions change.
 
 ## Core Pipeline
 
-1. A user-supplied problem definition describes inputs, constraints, objective
-   functions, and fixed keyboard inputs.
-2. Python orchestrator passes that problem definition to Wolfram/Mathematica.
-3. Mathematica emits approximate angles.
-4. Python combines the original inputs with the Mathematica angles and passes
+1. A low-level Mathematica input JSON describes `Imux`, `Imuz`, `Mmu`, constants,
+   constraints, objective, component overrides, and inertia events.
+2. Python orchestrator can render that schema into an inspectable `.wls` script
+   and can run the canonical Wolfram optimizer.
+3. Mathematica emits approximate movement-direction angles as JSON.
+4. Python will combine fixed keyboard inputs with Mathematica angles and pass
    them to the C++ exact solver.
-5. C++ produces a macro CSV using an existing macro-tool CSV format.
+5. C++ will produce a macro CSV using an existing macro-tool CSV format.
 
 The Forge mod is a later quality-of-life client for creating problem
 definitions, starting the orchestrator, and optionally rendering results. Do not
@@ -22,6 +23,8 @@ let mod concerns drive the core contracts.
 ## Stable Decisions
 
 - Minecraft mod loader: Forge.
+- Project name: WolframTAS. The old WolfTAS name/path is obsolete and should
+  not be reintroduced in docs, package names, schemas, or commands.
 - Minecraft version: 1.8.9.
 - Mod language: Java.
 - Java compatibility: Java 8.
@@ -39,12 +42,44 @@ let mod concerns drive the core contracts.
 - If unsandboxed `wolframscript` cannot find the kernel, use
   `/Applications/Wolfram.app/Contents/MacOS/WolframKernel` explicitly or check
   `wolframscript -configure`.
-- Angle domain: Minecraft discrete lookup table of size `2^14`.
-- Cross-component contracts are not finalized yet. Wait for user-provided
-  Mathematica input requirements, exact-solver input requirements, and existing
-  macro CSV format details before changing schema contents.
-- Macro output should match the existing external macro-tool CSV format once
-  that format is provided.
+- Angle domain: Minecraft discrete lookup table of size `2^16`.
+- Mathematica input v1 is `schemas/mathematica_input.schema.json`: a low-level
+  Mathematica-ready JSON contract with direct `Imux`, `Imuz`, `Mmu`, constants,
+  expression-string constraints/objective, explicit component overrides, and
+  inertia events.
+- `mathematica/optimize.wls` is the canonical CLI optimizer entrypoint:
+  `wolframscript -file mathematica/optimize.wls path/to/input.json`. It prints a
+  single RawJSON approximate solution object to stdout.
+- Schema-to-Wolfram rendering belongs to the Python orchestrator, currently via
+  `python3 -m wolframtas_orchestrator render-mathematica`. Do not create random
+  one-off generator scripts; add reusable code under `orchestrator/` instead.
+- The Python orchestrator can run Mathematica via
+  `python3 -m wolframtas_orchestrator run-mathematica input.json --approx-out out.json`.
+- Exact-solver input v1 is `schemas/exact_solver_input.schema.json`: an
+  input-first solver-ready JSON contract with `movement_plan`, `initial_state`,
+  and Mathematica's selected `optimal_solution.movement_directions`. Low-level
+  `Imux`, `Imuz`, and `Mmu` arrays belong in generated/debug `derived_model`
+  data or legacy fixtures, not new hand-authored exact-solver inputs.
+- The C++ solver consumes exact-solver input JSON on stdin, derives supported
+  forward-only movement values from `movement_plan`, and simulates from the
+  selected movement direction. It still accepts legacy arrays as a compatibility
+  fallback.
+- Exact solver angle handling: keep Mathematica movement directions in radians
+  internally and flip sign to get Minecraft yaw radians. Apply Minecraft-style
+  float32 angle indexing for `mcsin`/`mccos`
+  (`(int)(value * 10430.378F)` and cosine `+ 16384.0F`, masked with `65535`),
+  but compute the indexed sine value with `std::sin` on demand instead of
+  caching a 65536-float table. Convert to degrees only for exact-solution
+  diagnostics and macro-relative yaw output.
+- Exact solver horizontal state currently uses double/float64 `x`, `z`, `vx`,
+  and `vz` to match anon-noob mothball `player.py` under NumPy 1.26 scalar
+  promotion. Movement-plan inputs derive acceleration/retention through the
+  same float32 movement-intermediate paths before simulation; legacy shorthand
+  `Imux`/`Imuz`/`Mmu` literals are normalized only as a compatibility fallback.
+- Macro CSV details are documented in `schemas/macro_csv.md`. The external
+  format columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`; yaw and pitch are
+  relative degree deltas, not absolute angles.
+- Real orchestrator handoff to the exact solver is still unfinished.
 
 ## Engineering Rules
 
@@ -53,6 +88,8 @@ let mod concerns drive the core contracts.
 - Keep fixtures in `examples/` small and human-readable.
 - When changing cross-component behavior, update schemas, examples, and tests
   in the same change.
+- Generated inspection scripts in `examples/` must be reproducible through the
+  orchestrator renderer; keep the source JSON fixture next to them.
 - Do not commit generated outputs, build directories, IDE metadata, or logs.
 - Avoid repo-wide refactors unless they are required for the current task.
 
@@ -61,10 +98,39 @@ let mod concerns drive the core contracts.
 - `mod/`: later GUI, world/block extraction, request serialization, macro
   import/export, optional render overlay.
 - `orchestrator/`: process execution, stdin/stdout/file handoff, logging, and
-  validation of pipeline artifacts.
+  validation of pipeline artifacts. It also owns rendering the Mathematica input
+  schema into inspectable/runnable Wolfram scripts and invoking the canonical
+  Wolfram optimizer.
 - `mathematica/`: approximate continuous optimization.
 - `solver/`: exact movement conversion and macro CSV output.
 - `schemas/`: source of truth for shared data formats once finalized.
+
+## Current Useful Commands
+
+- Render a schema fixture to an inspectable Wolfram script:
+  `PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator render-mathematica examples/involved_mathematica_input.json --out examples/involved_from_schema.wls`
+- Run Mathematica through the orchestrator:
+  `PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator run-mathematica examples/simple_jump/inertia_mathematica_input.json --approx-out /tmp/wolframtas_inertia_approx.json`
+- Run the canonical Wolfram optimizer directly:
+  `wolframscript -file mathematica/optimize.wls examples/simple_jump/inertia_mathematica_input.json`
+- Run orchestrator tests:
+  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator python3 -B -m pytest orchestrator/tests`
+
+## Current Fixtures
+
+- `examples/simple_jump/mathematica_input.json`: simple water-transition optimizer fixture.
+- `examples/simple_jump/wall_ladder_mathematica_input.json`: separated `Imux`/`Imuz` plus ladder-style component override.
+- `examples/simple_jump/inertia_mathematica_input.json`: inertia hit and inertia avoid fixture.
+- `examples/simple_jump/exact_solver_input.json`: low-level exact-solver input fixture derived from the inertia fixture plus a selected movement direction.
+- `examples/simple_jump/flat_sprintjump_exact_solver_input.json`: input-first exact-solver fixture for flat sprintjump no-45, used to check the solver's NumPy-1.26-style horizontal recurrence.
+- `examples/involved_sim.wls`: user-provided larger handwritten Wolfram example.
+- `examples/involved_mathematica_input.json`: JSON port of the involved example.
+- `examples/involved_from_schema.wls`: generated inspection script from the JSON port.
+
+## Next Unfinished Work
+
+- Replace the fixture/no-op exact-solution path with real orchestrator handoff to the C++ solver.
+- Decide whether `mathematica/optimize.wls` should continue building directly from JSON or consume generated `.wls` from the orchestrator to avoid duplicated Wolfram model rendering logic.
 
 ## Learned Movement Rules
 
@@ -73,8 +139,12 @@ let mod concerns drive the core contracts.
 - `Mmu` stores per-slot horizontal acceleration magnitudes, plus `init` when
   chaining previous momentum into the same closed-form contribution model.
 - `Imux`/`Imuz` store per-slot horizontal velocity retention/drag multipliers.
-- Chained simulations generally assume the first `init` slot moves from tick
-  0 to tick 1.
+- Chained simulations assume the first `init` slot moves from tick 0 to tick 1.
+  In movement-plan inputs, `kind: "init"` is an authoritative horizontal
+  velocity contribution with explicit `velocity.x`, `velocity.z`, `imux`, and
+  `imuz`; it is not validated against keyboard movement. The velocity magnitude
+  is used as the first `Mmu` entry, and the direction is represented by the
+  first movement-direction angle.
 - Air drag is `0.91`. Flat normal-ground drag after a ground tick is
   `0.91 * 0.6 = 0.546`. Water drag is `0.8`.
 - No-45 forward movement uses the `0.98` input factor. 45-strafe uses `1.0`.
@@ -86,6 +156,9 @@ let mod concerns drive the core contracts.
 - Air no-45 sprint acceleration: `0.02 * 1.3 * 0.98 = 0.02548`.
 - Water/lava have 45/no-45 input behavior, but no normal sustained sprinting.
 - Water, lava, sneaking, and hitting a wall remove sprint.
+- Exact-solver movement-plan slots separate acceleration context from retention
+  context so fixed-tick edge cases can override drag provenance without
+  changing the acceleration path.
 - On ground, sprint activation/removal is not delayed.
 - In air, sprint activation and sprint removal are delayed by 1 tick.
 - The delayed air sprint multiplier is applied only if the tick that receives
@@ -137,3 +210,14 @@ let mod concerns drive the core contracts.
 - The sign of the ladder override matters and should match the clamped movement
   direction. The exact ladder clamp belongs in the C++ exact solver; Mathematica
   uses this fixed-tick approximation to preserve the closed-form model.
+- Momentum threshold is checked independently for X/Z components at the end of
+  a tick after slipperiness. In 1.8.9 the threshold is `0.005`; below-threshold
+  components are set to `0`.
+- Model an inertia-hit tick for one specified axis with two linear
+  post-retention upper-bound constraints, e.g. `imu*(X[F,m]-X[F,m-1]) <= 0.005`
+  and `imu*(X[F,m-1]-X[F,m]) <= 0.005`, then set the corresponding
+  `Imux[[m]]` or `Imuz[[m]]` to `0`.
+- Model an inertia-avoid tick for one specified axis and direction with one
+  post-retention lower-bound constraint, e.g. positive X uses
+  `imu*(X[F,m]-X[F,m-1]) >= 0.005`; negative X flips the subtraction. Do not
+  zero `Imux`/`Imuz` for avoid events.

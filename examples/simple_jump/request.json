@@ -2,7 +2,7 @@
   "version": 1,
   "minecraft_version": "1.8.9",
   "angle_domain": {
-    "table_size": 16384
+    "table_size": 65536
   },
   "start_state": {
     "position": { "x": 0.0, "y": 64.0, "z": 0.0 },
