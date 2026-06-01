@@ -2,6 +2,7 @@
 
 #include "wolframtas/angle_table.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <stdexcept>
@@ -17,33 +18,6 @@ struct SlotMovement {
     double mmu = 0.0;
 };
 
-float no45_forward_acceleration(float movement) {
-    const float forward = static_cast<float>(1.0F * 0.98F);
-    float distance = static_cast<float>(forward * forward);
-    distance = static_cast<float>(std::sqrt(static_cast<double>(distance)));
-    if (distance < 1.0F) {
-        distance = 1.0F;
-    }
-    distance = static_cast<float>(movement / distance);
-    return static_cast<float>(forward * distance);
-}
-
-double movement_acceleration(float movement, const MovementSlot& slot) {
-    if (slot.acceleration_input == "no45_forward") {
-        if (slot.controls.forward != 1 || slot.controls.strafe != 0) {
-            throw std::runtime_error("no45_forward requires forward=1 and strafe=0");
-        }
-        return static_cast<double>(no45_forward_acceleration(movement));
-    }
-    if (slot.acceleration_input == "forward_45") {
-        if (slot.controls.forward != 1 || std::abs(slot.controls.strafe) != 1) {
-            throw std::runtime_error("forward_45 requires forward=1 and abs(strafe)=1");
-        }
-        return static_cast<double>(movement);
-    }
-    throw std::runtime_error("unsupported movement input mode: " + slot.acceleration_input);
-}
-
 float retention_multiplier(const std::string& medium) {
     if (medium == "flat_ground") {
         return static_cast<float>(0.91F * 0.6F);
@@ -58,11 +32,13 @@ float retention_multiplier(const std::string& medium) {
         return static_cast<float>(0.91F * 0.98F);
     }
     if (medium == "water") {
-        const float water_slip = static_cast<float>(0.8F / 0.91F);
+        // mothball computes fl(0.8/0.91): the ratio in float64, then rounds to float32.
+        const float water_slip = static_cast<float>(0.8 / 0.91);
         return static_cast<float>(0.91F * water_slip);
     }
     if (medium == "lava") {
-        const float lava_slip = static_cast<float>(0.5F / 0.91F);
+        // mothball computes fl(0.5/0.91): the ratio in float64, then rounds to float32.
+        const float lava_slip = static_cast<float>(0.5 / 0.91);
         return static_cast<float>(0.91F * lava_slip);
     }
     if (medium == "none") {
@@ -71,7 +47,24 @@ float retention_multiplier(const std::string& medium) {
     throw std::runtime_error("unsupported retention medium: " + medium);
 }
 
-SlotMovement derive_slot_movement(const MovementSlot& slot) {
+// Effective ("actually sprinting") state for a slot: the sprint input as given.
+// mothball move() applies the sprint boost from the raw sprinting arg and does
+// NOT remove it for sneak/water/lava/wall (e.g. the sneaksprint command keeps
+// sprint while sneaking). Whoever builds the plan (command parser or optimizer)
+// decides the sprint input per tick; water/lava no-boost is handled by the
+// acceleration branch (movement = 0.02), not by removing sprint here. Air sprint
+// activation/removal is delayed one tick via the previous slot's effective sprint.
+bool slot_effective_sprint(const MovementSlot& slot) {
+    if (slot.kind == "init") {
+        return false;
+    }
+    return slot.controls.sprint;
+}
+
+// ground_sprint is this slot's effective sprint (ground changes are immediate).
+// air_prev_sprint is the previous slot's effective sprint (air sprint
+// activation/removal is delayed one tick), matching mothball's prev_sprint.
+SlotMovement derive_slot_movement(const MovementSlot& slot, bool ground_sprint, bool air_prev_sprint) {
     if (slot.kind == "init") {
         return SlotMovement{
             slot.init_imux,
@@ -94,7 +87,7 @@ SlotMovement derive_slot_movement(const MovementSlot& slot) {
     float movement = 0.0F;
     if (slot.acceleration_medium == "ground") {
         movement = 0.1F;
-        if (slot.controls.sprint) {
+        if (ground_sprint) {
             movement = static_cast<float>(static_cast<double>(movement) * (1.0 + static_cast<double>(0.3F)));
         }
         const float retention = retention_multiplier(slot.retention_medium);
@@ -102,7 +95,7 @@ SlotMovement derive_slot_movement(const MovementSlot& slot) {
             movement * static_cast<float>(0.16277136F / static_cast<float>(retention * retention * retention)));
     } else if (slot.acceleration_medium == "air") {
         movement = 0.02F;
-        if (slot.controls.sprint) {
+        if (air_prev_sprint) {
             movement = static_cast<float>(static_cast<double>(movement) + static_cast<double>(movement) * 0.3);
         }
     } else if (slot.acceleration_medium == "water" || slot.acceleration_medium == "lava") {
@@ -111,11 +104,13 @@ SlotMovement derive_slot_movement(const MovementSlot& slot) {
         throw std::runtime_error("unsupported movement slot acceleration medium: " + slot.acceleration_medium);
     }
 
-    double mmu = movement_acceleration(movement, slot);
-    if (slot.acceleration_medium == "ground" && slot.controls.jump && slot.controls.sprint) {
-        mmu += static_cast<double>(0.2F);
-    }
-    return SlotMovement{static_cast<double>(retention_x), static_cast<double>(retention_z), mmu};
+    // mmu carries the base movement magnitude M. simulate() does the forward/
+    // strafe 2D decomposition and the separate sprint-jump 0.2 boost, mimicking
+    // mothball's move(), so no-45/45/sneak are all handled the same way.
+    return SlotMovement{
+        static_cast<double>(retention_x),
+        static_cast<double>(retention_z),
+        static_cast<double>(movement)};
 }
 
 float mcsin_index(int index) {
@@ -125,6 +120,49 @@ float mcsin_index(int index) {
 
 float mccos_index(int index) {
     return mcsin_index(index + 16384);
+}
+
+// Faithful port of mothball move() forward/strafe handling (player.py:146-178):
+// scale forward/strafe by sneak (0.3) then 0.98, normalize by distance (clamped
+// to >= 1), scale by the movement magnitude, and rotate by the facing yaw.
+// movement is the base magnitude M; yaw_index encodes the facing.
+void apply_movement_input(
+    double& vx,
+    double& vz,
+    float movement,
+    const Controls& controls,
+    int yaw_index) {
+    float forward = static_cast<float>(controls.forward);
+    float strafe = static_cast<float>(controls.strafe);
+    if (controls.sneak) {
+        forward = static_cast<float>(static_cast<double>(forward) * 0.3);
+        strafe = static_cast<float>(static_cast<double>(strafe) * 0.3);
+    }
+    forward = static_cast<float>(forward * 0.98F);
+    strafe = static_cast<float>(strafe * 0.98F);
+    float distance = static_cast<float>(strafe * strafe + forward * forward);
+    if (distance < 0.0001F) {
+        return;
+    }
+    distance = static_cast<float>(std::sqrt(static_cast<double>(distance)));
+    if (distance < 1.0F) {
+        distance = 1.0F;
+    }
+    distance = static_cast<float>(movement / distance);
+    forward = static_cast<float>(forward * distance);
+    strafe = static_cast<float>(strafe * distance);
+    const float sin_yaw = mcsin_index(yaw_index);
+    const float cos_yaw = mccos_index(yaw_index);
+    // Round each product to float32 separately before combining (matching numpy
+    // float32 arithmetic). Folding these into a fused multiply-add would compute
+    // one product at extended precision and break the cancellation that makes a
+    // symmetric 45 input produce exactly zero perpendicular drift.
+    const float strafe_cos = static_cast<float>(strafe * cos_yaw);
+    const float forward_sin = static_cast<float>(forward * sin_yaw);
+    const float forward_cos = static_cast<float>(forward * cos_yaw);
+    const float strafe_sin = static_cast<float>(strafe * sin_yaw);
+    vx += static_cast<double>(strafe_cos - forward_sin);
+    vz += static_cast<double>(forward_cos + strafe_sin);
 }
 
 int mc_angle_index_from_radians(double radians) {
@@ -166,7 +204,13 @@ void derive_arrays_from_movement_plan(ExactInput& input) {
         if (slot.slot != index + 1) {
             throw std::runtime_error("movement_plan.slots must be in 1-based slot order");
         }
-        const SlotMovement movement = derive_slot_movement(slot);
+        // Ground sprint is immediate (this slot); air sprint is delayed by one
+        // tick (previous slot's effective sprint). The first slot has no prior.
+        const bool ground_sprint = slot_effective_sprint(slot);
+        const bool air_prev_sprint = index == 0
+            ? false
+            : slot_effective_sprint(input.movement_slots.at(static_cast<std::size_t>(index - 1)));
+        const SlotMovement movement = derive_slot_movement(slot, ground_sprint, air_prev_sprint);
         input.imux.push_back(movement.imux);
         input.imuz.push_back(movement.imuz);
         input.mmu.push_back(movement.mmu);
@@ -188,7 +232,22 @@ std::vector<int> seed_yaw_indices(const ExactInput& input) {
     std::vector<int> yaw_indices;
     yaw_indices.reserve(static_cast<std::size_t>(input.n));
     for (int index = 0; index < input.n; ++index) {
-        const double yaw_radians = -input.movement_direction_radians.at(static_cast<std::size_t>(index));
+        const auto offset = static_cast<std::size_t>(index);
+        // The input angle is the movement (travel/resultant) direction. The
+        // facing (MC yaw, what the macro records and the repair tunes) differs
+        // from the travel direction by the input's local angle: 0 for forward,
+        // +/-45 deg for a forward+strafe diagonal. Derive the facing here.
+        double facing_offset = 0.0;
+        if (!input.movement_slots.empty()) {
+            const MovementSlot& slot = input.movement_slots.at(offset);
+            if (slot.kind != "init") {
+                facing_offset = std::atan2(
+                    static_cast<double>(slot.controls.strafe),
+                    static_cast<double>(slot.controls.forward));
+            }
+        }
+        const double yaw_radians =
+            -input.movement_direction_radians.at(offset) + facing_offset;
         yaw_indices.push_back(mc_angle_index_from_radians(yaw_radians));
     }
     return yaw_indices;
@@ -196,10 +255,12 @@ std::vector<int> seed_yaw_indices(const ExactInput& input) {
 
 std::vector<State> simulate(const ExactInput& input, const std::vector<int>& yaw_indices) {
     constexpr double inertia_threshold = 0.005;
+    constexpr double ladder_clamp = 0.15;
     std::vector<State> states;
     State state = input.initial_state;
     states.push_back(state);
 
+    bool prev_web = false;
     for (int index = 0; index < input.n; ++index) {
         const int slot = index + 1;
         const auto offset = static_cast<std::size_t>(index);
@@ -210,20 +271,46 @@ std::vector<State> simulate(const ExactInput& input, const std::vector<int>& yaw
         const double mmu = input.mmu.at(offset);
         const MovementSlot* movement_slot = input.movement_slots.empty() ? nullptr : &input.movement_slots.at(offset);
 
-        double mmux = 0.0;
-        double mmuz = 0.0;
+        // Velocity contribution this tick. init seeds a raw speed along the
+        // direction; movement slots add the sprint-jump boost then the
+        // forward/strafe 2D movement (mothball order), all via the facing yaw.
+        double dvx = 0.0;
+        double dvz = 0.0;
         if (movement_slot != nullptr && movement_slot->kind == "init") {
-            mmux = std::sin(movement_direction) * mmu;
-            mmuz = std::cos(movement_direction) * mmu;
-        } else {
-            mmux = -static_cast<double>(mcsin_index(yaw_index)) * mmu;
-            mmuz = static_cast<double>(mccos_index(yaw_index)) * mmu;
+            dvx = std::sin(movement_direction) * mmu;
+            dvz = std::cos(movement_direction) * mmu;
+        } else if (movement_slot != nullptr) {
+            if (movement_slot->controls.jump && slot_effective_sprint(*movement_slot)) {
+                dvx -= static_cast<double>(mcsin_index(yaw_index) * 0.2F);
+                dvz += static_cast<double>(mccos_index(yaw_index) * 0.2F);
+            }
+            apply_movement_input(dvx, dvz, static_cast<float>(mmu), movement_slot->controls, yaw_index);
         }
-        mmux = override_component(input.component_overrides, "mmux", slot, mmux);
-        mmuz = override_component(input.component_overrides, "mmuz", slot, mmuz);
+        dvx = override_component(input.component_overrides, "mmux", slot, dvx);
+        dvz = override_component(input.component_overrides, "mmuz", slot, dvz);
 
-        state.vx += mmux;
-        state.vz += mmuz;
+        const bool web = movement_slot != nullptr && movement_slot->web;
+        const bool ladder = movement_slot != nullptr && movement_slot->ladder;
+
+        // mothball: being in a web on the previous tick zeroes the carried
+        // (post-drag) velocity at the start of this tick, before acceleration.
+        if (prev_web) {
+            state.vx = 0.0;
+            state.vz = 0.0;
+        }
+
+        state.vx += dvx;
+        state.vz += dvz;
+        // Minecraft applies cobweb slowdown and ladder clamping to the motion
+        // before the move (Entity.moveEntity), i.e. after acceleration.
+        if (web) {
+            state.vx /= 4.0;
+            state.vz /= 4.0;
+        }
+        if (ladder) {
+            state.vx = std::min(std::max(state.vx, -ladder_clamp), ladder_clamp);
+            state.vz = std::min(std::max(state.vz, -ladder_clamp), ladder_clamp);
+        }
         state.move_vx = state.vx;
         state.move_vz = state.vz;
         state.x += state.vx;
@@ -239,6 +326,7 @@ std::vector<State> simulate(const ExactInput& input, const std::vector<int>& yaw
         if (std::abs(state.vz) < inertia_threshold) {
             state.vz = 0.0;
         }
+        prev_web = web;
         state.tick = slot;
         states.push_back(state);
     }

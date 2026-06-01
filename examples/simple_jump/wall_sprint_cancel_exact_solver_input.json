@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "name": "wall-sprint-cancel",
+  "slot_indexing": "1_based",
+  "n": 6,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": false
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      { "slot": 1, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } },
+      { "slot": 2, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } },
+      { "slot": 3, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } },
+      { "slot": 4, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" }, "wall_hit": { "axes": ["x"] } },
+      { "slot": 5, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } },
+      { "slot": 6, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } }
+    ]
+  },
+  "derived_model": {
+    "diagnostics": {
+      "description": "Air sprint moving +z; a wall hit at slot 4 removes the sprint keyboard input, so the sprint attribute (controls.sprint) drops to false at slot 4. The air boost is delayed one tick: slot 4 is still boosted (previous attribute true), slot 5 is the single no-sprint air slot, slot 6 resumes. The wall_hit x also zeros x momentum (already 0 here). Verified against the mothball reference (numpy 1.26)."
+    }
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.0,
+    "movement_directions": [
+      { "slot": 1, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 2, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 3, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 4, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 5, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 6, "radians": 0.0, "degrees": 0.0 }
+    ],
+    "diagnostics": { "fixture": true }
+  }
+}

@@ -13,7 +13,9 @@ from wolframtas_orchestrator.movement_model import (
     flat_walk_no45_mmu,
     fluid_45_mmu,
     fluid_no45_mmu,
+    ice_retention,
     lava_retention,
+    slime_retention,
     water_retention,
 )
 
@@ -28,7 +30,9 @@ def test_known_no45_values_match_reference_paths() -> None:
     assert air_walk_45_mmu() == 0.019999999552965164
     assert flat_walk_no45_mmu() == 0.09800000488758087
     assert water_retention() == 0.800000011920929
-    assert lava_retention() == 0.4999999701976776
+    assert lava_retention() == 0.5000000596046448
+    assert slime_retention() == 0.7280000448226929
+    assert ice_retention() == 0.891800045967102
     assert fluid_no45_mmu() == 0.019600000232458115
     assert fluid_45_mmu() == 0.019999999552965164
 

@@ -107,6 +107,14 @@ void parse_movement_plan(const Json::Object& object, ExactInput& exact_input) {
                 slot.acceleration_input = input_mode->string();
             }
             slot.retention_medium = at(retention, "medium").string();
+            const Json* web_value = find_value(slot_object, "web");
+            if (web_value != nullptr) {
+                slot.web = json_bool(*web_value, "web");
+            }
+            const Json* ladder_value = find_value(slot_object, "ladder");
+            if (ladder_value != nullptr) {
+                slot.ladder = json_bool(*ladder_value, "ladder");
+            }
             const Json* wall_hit = find_value(slot_object, "wall_hit");
             if (wall_hit != nullptr) {
                 const Json::Object& wall_hit_object = wall_hit->object();

@@ -31,11 +31,16 @@ The current Mathematica example uses a closed-form contribution model:
 Important timing rules learned so far:
 
 - Chained simulations usually start with an `init` slot from tick 0 to tick 1.
-- Ground sprint state changes are immediate.
-- Air sprint activation/removal is delayed by one tick.
-- Water, lava, sneaking, and wall hits remove sprint.
-- Delayed air sprint is applied only if the receiving tick has no water/lava,
-  sneaking, or wall-hit removal condition.
+- `controls.sprint` is the sprint ATTRIBUTE (what applies the boost), distinct
+  from the sprint keyboard input. The solver applies the boost from it: immediate
+  on ground, delayed one tick in air (previous slot's value), matching mothball's
+  `prev_sprint`. The solver does NOT strip sprint for sneak/water/lava/wall;
+  water/lava no-boost is the acceleration branch, and the plan builder sets the
+  attribute per tick.
+- Sneaking removes the sprint keyboard input but not an already-true attribute;
+  the one-tick air delay lets the attribute persist one air tick after sneaking
+  (the sneaksprint tech). Drop `controls.sprint` from the tick the keyboard is
+  removed and the delay reproduces it.
 - Water/lava support 45/no-45 input factors but not normal sustained sprinting.
 - Slime ground drag is `0.728`. For chained `init` -> flat sprint jump -> slime
   bounce -> flat landing, use `n = 22` for the post-bounce landing condition;

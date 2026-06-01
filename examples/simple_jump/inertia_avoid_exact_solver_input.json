@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "name": "inertia-avoid-z",
+  "slot_indexing": "1_based",
+  "n": 4,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": true
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      { "slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91 },
+      { "slot": 2, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "ground", "input": "no45_forward" }, "retention": { "medium": "flat_ground", "slipperiness": 0.6 } },
+      { "slot": 3, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "ground", "input": "no45_forward" }, "retention": { "medium": "flat_ground", "slipperiness": 0.6 } },
+      { "slot": 4, "kind": "movement", "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "ground", "input": "no45_forward" }, "retention": { "medium": "flat_ground", "slipperiness": 0.6 } }
+    ]
+  },
+  "inertia_events": [
+    { "id": "inertia_avoid_z", "type": "avoid", "axis": "z", "direction": "positive", "slot": 4, "threshold": 0.005 }
+  ],
+  "derived_model": {
+    "diagnostics": {
+      "description": "Flat-ground walk no-45: retained +z velocity stays well above the 0.005 threshold (normal movement, no inertia zeroing). Verified against the mothball reference (numpy 1.26)."
+    }
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.0,
+    "movement_directions": [
+      { "slot": 1, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 2, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 3, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 4, "radians": 0.0, "degrees": 0.0 }
+    ],
+    "diagnostics": { "fixture": true }
+  }
+}

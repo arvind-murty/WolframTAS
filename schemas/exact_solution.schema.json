@@ -19,6 +19,7 @@
       "type": "array",
       "items": { "$ref": "#/$defs/macro_row" }
     },
+    "derived_model": { "$ref": "#/$defs/derived_model" },
     "diagnostics": { "$ref": "#/$defs/diagnostics" }
   },
   "additionalProperties": false,
@@ -72,6 +73,17 @@
         "l": { "type": "integer", "minimum": 0 },
         "r": { "type": "integer", "minimum": 0 },
         "count": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "derived_model": {
+      "type": "object",
+      "description": "Movement values the exact solver derived from movement_plan (imux/imuz retention and mmu acceleration per slot). Echoed for debugging and cross-model consistency checks against the Python orchestrator derivation.",
+      "required": ["imux", "imuz", "mmu"],
+      "properties": {
+        "imux": { "type": "array", "items": { "type": "number" } },
+        "imuz": { "type": "array", "items": { "type": "number" } },
+        "mmu": { "type": "array", "items": { "type": "number" } }
       },
       "additionalProperties": false
     },

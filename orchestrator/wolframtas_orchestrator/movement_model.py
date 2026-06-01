@@ -27,13 +27,23 @@ def air_retention() -> float:
     return fl(fl(0.91) * fl(1.0))
 
 
+def slime_retention() -> float:
+    return fl(fl(0.91) * fl(0.8))
+
+
+def ice_retention() -> float:
+    return fl(fl(0.91) * fl(0.98))
+
+
 def water_retention() -> float:
-    water_slip = fl(fl(0.8) / fl(0.91))
+    # mothball computes fl(0.8/0.91): the ratio in float64, then rounds to float32.
+    water_slip = fl(0.8 / 0.91)
     return fl(fl(0.91) * water_slip)
 
 
 def lava_retention() -> float:
-    lava_slip = fl(fl(0.5) / fl(0.91))
+    # mothball computes fl(0.5/0.91): the ratio in float64, then rounds to float32.
+    lava_slip = fl(0.5 / 0.91)
     return fl(fl(0.91) * lava_slip)
 
 
@@ -97,6 +107,10 @@ def derive_retention(slot: dict[str, Any]) -> float:
         return flat_ground_retention()
     if medium == "air":
         return air_retention()
+    if medium == "slime":
+        return slime_retention()
+    if medium == "ice":
+        return ice_retention()
     if medium == "water":
         return water_retention()
     if medium == "lava":

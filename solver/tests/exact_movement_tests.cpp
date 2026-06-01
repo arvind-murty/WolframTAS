@@ -50,6 +50,8 @@ wolframtas::ExactInput flat_sprint_jump_input(bool air_45) {
             air_45 ? "forward_45" : "no45_forward",
             air_45 ? 1 : 0));
     }
+    // Movement direction (resultant) is +z (0) for every slot; the solver
+    // derives the +45 deg facing for the air-45 slots from forward+strafe.
     input.movement_direction_radians.assign(12, 0.0);
     wolframtas::derive_arrays_from_movement_plan(input);
     wolframtas::validate_exact_input(input);
@@ -105,11 +107,13 @@ int main() {
         input.movement_direction_radians.assign(2, 0.0);
         wolframtas::derive_arrays_from_movement_plan(input);
         wolframtas::validate_exact_input(input);
+        // mmu now carries the base movement magnitude M (0.02 for water/lava),
+        // not the forward-scaled value; simulate() does the forward/strafe scaling.
         assert_close(input.imux.at(0), 0.0);
         assert_close(input.imuz.at(0), 0.800000011920929);
-        assert_close(input.mmu.at(0), 0.019600000232458115);
-        assert_close(input.imux.at(1), 0.49999997019767761);
-        assert_close(input.imuz.at(1), 0.49999997019767761);
+        assert_close(input.mmu.at(0), 0.019999999552965164);
+        assert_close(input.imux.at(1), 0.50000005960464478);
+        assert_close(input.imuz.at(1), 0.50000005960464478);
         assert_close(input.mmu.at(1), 0.019999999552965164);
         const std::vector<wolframtas::State> states = wolframtas::simulate(input, wolframtas::seed_yaw_indices(input));
         assert_close(states.at(1).retained_vx, 0.0);

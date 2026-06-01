@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "name": "wall-hit-x",
+  "slot_indexing": "1_based",
+  "n": 3,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.2, "y": 0.0, "z": 0.2 },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": false
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      { "slot": 1, "kind": "movement", "controls": { "forward": 0, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } },
+      { "slot": 2, "kind": "movement", "controls": { "forward": 0, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" }, "wall_hit": { "axes": ["x"] } },
+      { "slot": 3, "kind": "movement", "controls": { "forward": 0, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } }
+    ]
+  },
+  "derived_model": {
+    "diagnostics": {
+      "description": "One-axis X wall hit at slot 2: imux=0 cancels X momentum while Z retention continues. Z axis verified against the mothball reference (numpy 1.26); the one-axis X cancellation is a collision model override (mothball uses a single isotropic slip and cannot reproduce it independently)."
+    }
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.0,
+    "movement_directions": [
+      { "slot": 1, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 2, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 3, "radians": 0.0, "degrees": 0.0 }
+    ],
+    "diagnostics": { "fixture": true }
+  }
+}

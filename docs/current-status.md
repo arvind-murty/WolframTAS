@@ -54,6 +54,74 @@ Locked exact outputs:
 - Flat sprint jump no-45 final `z = 2.6234314852435587`.
 - Flat sprint jump 45 final `z = 2.645539114938402`.
 
+Movement/medium mechanics (walk, sprint, jumps, 45, sneak, sneaksprint, air,
+water, lava, slime, ice, ladder, web, sprint delay) are validated by **parsing
+mothball command strings and comparing the C++ solver to the mothball simulator**
+(`e2e/test_command_parser.py`; ~36 commands, no hand-authored expected values).
+This replaced the per-mechanic hand-authored ctest fixtures.
+
+The solver ctest is now a lean set: the fast C++ unit tests (`exact_movement_tests`
+still pins the locked sprint-jump outputs above) plus fixtures for behaviour
+mothball commands cannot express — angle repair, constraint/objective failure,
+one-axis `wall_hit`, and the seeded-velocity inertia threshold (`inertia_hit`,
+`inertia_avoid`).
+
+Building this surfaced a 1-ULP slip bug: fluid slip was computed in float32
+(`0.5F / 0.91F`) but mothball computes it in float64 then rounds (`fl(0.5/0.91)`).
+Fixed in `solver/src/exact_movement.cpp` and `movement_model.py`; water was
+coincidentally unaffected.
+
+## Command parsing (mothball syntax)
+
+`orchestrator/wolframtas_orchestrator/command_parser.py` parses mothball command
+strings (e.g. `sj(12)`) into an exact-solver input, by driving the mothball
+engine vendored at `orchestrator/vendor/` (with the author's permission, see its
+NOTICE.md). The same parse also yields mothball's own simulated final state, so
+`e2e/test_command_parser.py` validates the solver against mothball per command
+(`sj(12)`, `walk(10)`, `sprint(8)`, `wj(5)` all bit-exact). The vendored engine
+needs numpy 1.26 + `evalidate`, so that test shells out to `.venv-oracle`.
+Alignment: with the leading init slot (n = 1 + moves), mothball's final position
+== `states_exact[n-1].z`, final velocity == `states_exact[n].vz`.
+
+## Cross-model consistency
+
+The Python orchestrator (Mathematica stage) and the C++ exact solver each derive
+`imux`/`imuz`/`mmu` from `movement_plan`. They had drifted: `slime` and `ice`
+retention existed only on the C++ side, so a slime/ice plan threw in the
+orchestrator. Reconciled `movement_model.py` to support all media the solver
+does. The solver now echoes its derived arrays in a `derived_model` block, and
+`e2e/test_movement_model_consistency.py` runs a shared plan (one no-input slot
+per retention medium) through both derivations and asserts they match, guarding
+against future drift.
+
+## Sprint state
+
+`controls.sprint` is the per-tick sprint ATTRIBUTE (what applies the boost),
+distinct from the sprint keyboard input. The solver applies the boost from it:
+immediate on ground, delayed one tick in air (previous slot), matching mothball's
+`prev_sprint`. The solver does NOT strip sprint on sneak/water/lava/wall; the
+plan builder (command parser or optimizer) sets the attribute per tick. Sneaking
+removes the keyboard input but not an already-true attribute, and the one-tick
+air delay yields the sneaksprint window. The `wall_sprint_cancel` ctest fixture
+covers dropping sprint at the wall tick (one no-sprint air slot follows); the
+turn-on delay and sneak+sprint (`sprintair`, `sns45`, `sj45`, ...) are covered by
+the parser command-parity tests.
+
+## Movement decomposition (faithful mothball port)
+
+The exact solver mimics mothball's real forward/strafe 2D decomposition for all
+movement (the old scalar 45 "magnitude along the resultant" shortcut is gone).
+`movement_directions[].radians` stays the movement (travel/resultant) direction;
+the solver derives the facing (MC yaw) via
+`facing = -movement_direction + atan2(strafe, forward)` and uses it for the
+decomposition, the angle repair, and the macro YAW column (the significant
+angle). For a 45 fixture/command, movement_direction stays the travel direction
+and the solver derives the 45° facing; the locked `flat_sprintjump_45` z is
+unchanged. The solver compiles with
+`-ffp-contract=off` so float32 arithmetic matches numpy bit-exactly (no fused
+multiply-add). Mechanics covered and mothball-validated: fluids, inertia
+hit/avoid, wall-hit, slime, ladder clamp, cobweb, sprint delay, sneak, sneak-45.
+
 ## Important Invariants
 
 - Mathematica angle variables are movement directions in radians, not final

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "name": "inertia-hit-x",
+  "slot_indexing": "1_based",
+  "n": 3,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.0055, "y": 0.0, "z": 0.0 },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": false
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      { "slot": 1, "kind": "movement", "controls": { "forward": 0, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } },
+      { "slot": 2, "kind": "movement", "controls": { "forward": 0, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } },
+      { "slot": 3, "kind": "movement", "controls": { "forward": 0, "strafe": 0, "jump": false, "sneak": false, "sprint": false }, "acceleration": { "medium": "air", "input": "no45_forward" }, "retention": { "medium": "air" } }
+    ]
+  },
+  "inertia_events": [
+    { "id": "inertia_hit_x", "type": "hit", "axis": "x", "slot": 2, "threshold": 0.005 }
+  ],
+  "derived_model": {
+    "diagnostics": {
+      "description": "X velocity seeded at 0.0055 decays by air retention below the 0.005 threshold at slot 2 and is zeroed. Verified against the mothball reference (numpy 1.26): the per-axis 0.005 inertia threshold."
+    }
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.0,
+    "movement_directions": [
+      { "slot": 1, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 2, "radians": 0.0, "degrees": 0.0 },
+      { "slot": 3, "radians": 0.0, "degrees": 0.0 }
+    ],
+    "diagnostics": { "fixture": true }
+  }
+}

@@ -111,7 +111,13 @@ let mod concerns drive the core contracts.
 - `orchestrator/`: process execution, stdin/stdout/file handoff, logging, and
   validation of pipeline artifacts. It also owns rendering the Mathematica input
   schema into inspectable/runnable Wolfram scripts and invoking the canonical
-  Wolfram optimizer.
+  Wolfram optimizer. It also owns the mothball command parser:
+  `command_parser.py` drives the mothball engine vendored at
+  `orchestrator/vendor/` (parser + simulator, used with the author's permission;
+  see its NOTICE.md) to turn command strings like `sj(12)` into an exact-solver
+  input plus mothball's reference final state. The vendored engine needs numpy
+  1.26 + `evalidate`. Do not edit the vendored files; adapt their output in
+  `command_parser.py` (original code).
 - `mathematica/`: approximate continuous optimization.
 - `solver/`: exact movement conversion and macro CSV output.
 - `schemas/`: source of truth for shared data formats once finalized.
@@ -174,11 +180,28 @@ let mod concerns drive the core contracts.
 - Exact-solver movement-plan slots separate acceleration context from retention
   context so fixed-tick edge cases can override drag provenance without
   changing the acceleration path.
-- On ground, sprint activation/removal is not delayed.
-- In air, sprint activation and sprint removal are delayed by 1 tick.
-- The delayed air sprint multiplier is applied only if the tick that receives
-  it has no water, lava, sneaking, or wall-hit removal condition. If a removal
-  condition is present on that receiving tick, the delayed sprint is not applied.
+- Distinguish the sprint KEYBOARD INPUT from the sprint ATTRIBUTE. The attribute
+  is what applies the speed boost (mothball's `sprinting` arg). `controls.sprint`
+  in a movement slot is the attribute for that tick.
+- The solver applies the boost from `controls.sprint`: immediate on the current
+  tick on ground; delayed by one tick in air (uses the previous slot's
+  `controls.sprint`), matching mothball's `prev_sprint`. The solver does NOT
+  strip sprint for sneak/water/lava/wall — water/lava simply take the no-boost
+  acceleration branch, and whoever builds the plan (the command parser mirroring
+  mothball, or the optimizer) sets the attribute per tick.
+- Sneaking removes the sprint KEYBOARD INPUT, but it does not override an
+  already-true sprint attribute. Because air sprint activation/removal is delayed
+  one tick, the attribute can stay true for one air tick after sneaking starts —
+  the `sneaksprint` tech. The solver reproduces this through the one-tick air
+  delay: set `controls.sprint` false from the tick the keyboard is removed, and
+  the previous (true) attribute still boosts that one air tick. mothball's
+  `sneaksprint` command instead holds the attribute true while sneaking
+  (sustained), which the solver also matches since it uses `controls.sprint`
+  directly. (Likewise a one-tick air wall hit: drop `controls.sprint` at the wall
+  tick; that tick is still boosted via the delay, then exactly one no-sprint air
+  slot follows, then sprint can resume.) Validated bit-exact vs mothball,
+  including the parser commands `s45`/`sns45`/`sj45`. `derive_arrays_from_movement_plan`
+  (`slot_effective_sprint`) just reads `controls.sprint`.
 - Slime block slipperiness is `0.8`, so horizontal ground drag on slime is
   `0.91 * 0.8 = 0.728`.
 - Falling on slime inverts negative vertical speed unless sneak/jump cancels
@@ -225,6 +248,42 @@ let mod concerns drive the core contracts.
 - The sign of the ladder override matters and should match the clamped movement
   direction. The exact ladder clamp belongs in the C++ exact solver; Mathematica
   uses this fixed-tick approximation to preserve the closed-form model.
+- The C++ exact solver now implements the ladder clamp directly: a slot with
+  `"ladder": true` clamps `vx`/`vz` to `[-0.15, 0.15]` at the Minecraft point
+  (after acceleration, before the position move). Validated bit-exact vs mothball.
+- Cobweb: a slot with `"web": true` cuts motion to 1/4 that tick (at the same
+  pre-move point), and being in web zeroes the carried velocity at the START of
+  the next tick (before that tick's acceleration), freezing position. This
+  matches mothball's `prev_web` behaviour and is validated bit-exact.
+- Sneak: scales the forward/strafe input by 0.3 before the 0.98 factor
+  (immediate in 1.8.9; mothball `sneak_delay` is False). It removes the sprint
+  KEYBOARD INPUT, but the sprint attribute is handled separately (see the
+  keyboard-vs-attribute note above) — the solver does not zero sprint on sneak.
+  Validated bit-exact via the parser command-parity tests (`sn`, `sn45`, `sns45`).
+- The exact solver mimics mothball's real forward/strafe 2D decomposition for
+  ALL movement (the old scalar "magnitude along the resultant" 45 shortcut was
+  removed). 45 = forward+strafe inputs rotated by the facing yaw.
+  `optimal_solution.movement_directions[].radians` stays the movement
+  (travel/resultant) direction, consistent with Mathematica and the rest of the
+  pipeline. The solver DERIVES the facing (MC yaw) in `seed_yaw_indices`:
+  `facing = -movement_direction + atan2(strafe, forward)` — the negate is the
+  convention flip, the atan2 is the travel-vs-facing geometry (0 for forward,
+  +/-45 deg for W+A/W+D). The derived facing yaw_index is what the repair tunes
+  and what the macro YAW column records (the significant angle), so it must be
+  accurate. no-45 keeps facing = travel. `mmu` in the derived arrays is the base
+  movement magnitude M; simulate() applies the forward/strafe scaling and the
+  separate sprint-jump 0.2 boost. No orchestrator resultant->facing conversion is
+  needed.
+- The solver compiles with `-ffp-contract=off`. numpy never fuses multiply-add,
+  and a fused `strafe*cos - forward*sin` computes one product at extended
+  precision, breaking the exact cancellation that makes a symmetric 45 input
+  produce zero perpendicular drift. Keep this flag for bit-exact float32 parity.
+- mothball and Minecraft match EXACTLY; mothball just reports position one tick
+  before the final (velocity is tick N-1 -> N). The C++ solver uses real-MC tick
+  order (accel -> move -> drag) and reproduces mothball when initial conditions
+  correspond. When validating against mothball, build velocity from rest; do NOT
+  seed a raw velocity (it bypasses mothball's clamp/drag and gives a false
+  mismatch).
 - Momentum threshold is checked independently for X/Z components at the end of
   a tick after slipperiness. In 1.8.9 the threshold is `0.005`; below-threshold
   components are set to `0`.

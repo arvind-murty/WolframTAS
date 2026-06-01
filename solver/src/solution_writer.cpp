@@ -158,6 +158,30 @@ void write_changed_angle_indices(
     }
 }
 
+void write_number_array(std::ostream& output, const std::vector<double>& values) {
+    output << "[";
+    for (std::size_t index = 0; index < values.size(); ++index) {
+        output << number_string(values[index]);
+        if (index + 1 != values.size()) {
+            output << ", ";
+        }
+    }
+    output << "]";
+}
+
+// Echo the movement values the solver derived from movement_plan. This is the
+// authoritative exact-side derivation; the Python orchestrator derives the same
+// arrays for the Mathematica stage, and a consistency test compares the two.
+void write_derived_model(std::ostream& output, const ExactInput& input) {
+    output << "  \"derived_model\": { \"imux\": ";
+    write_number_array(output, input.imux);
+    output << ", \"imuz\": ";
+    write_number_array(output, input.imuz);
+    output << ", \"mmu\": ";
+    write_number_array(output, input.mmu);
+    output << " },\n";
+}
+
 void write_diagnostics(
     std::ostream& output,
     const ExactInput& input,
@@ -190,6 +214,7 @@ void write_solution_json(std::ostream& output, const ExactInput& input, const Re
     write_angles_discrete(output, input, yaw_indices);
     write_states_exact(output, states);
     write_macro_rows(output, input, yaw_indices);
+    write_derived_model(output, input);
     write_diagnostics(output, input, repair_result, states, yaw_indices);
     output << "}\n";
 }

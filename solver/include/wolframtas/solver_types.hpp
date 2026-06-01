@@ -28,6 +28,8 @@ struct MovementSlot {
     std::string retention_medium;
     bool wall_hit_x = false;
     bool wall_hit_z = false;
+    bool web = false;
+    bool ladder = false;
     double init_speed = 0.0;
     double init_imux = 0.0;
     double init_imuz = 0.0;
