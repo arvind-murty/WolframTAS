@@ -102,12 +102,23 @@
     },
     "expression_constraint": {
       "type": "object",
-      "required": ["id", "expression"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "expression": { "type": "string", "minLength": 1 }
+        "expression": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["position_bounds"] },
+        "slot": { "type": "integer", "minimum": 0 },
+        "min_x": { "type": "number" },
+        "max_x": { "type": "number" },
+        "min_z": { "type": "number" },
+        "max_z": { "type": "number" },
+        "mathematica_tolerance": { "type": "number", "minimum": 0 },
+        "exact_tolerance": { "type": "number", "minimum": 0 }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["id", "expression"] },
+        { "required": ["id", "type", "slot"] }
+      ]
     }
   }
 }

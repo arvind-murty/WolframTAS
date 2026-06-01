@@ -62,8 +62,7 @@ let mod concerns drive the core contracts.
   data or legacy fixtures, not new hand-authored exact-solver inputs.
 - The C++ solver consumes exact-solver input JSON on stdin, derives supported
   forward-only movement values from `movement_plan`, and simulates from the
-  selected movement direction. It still accepts legacy arrays as a compatibility
-  fallback.
+  selected movement direction.
 - Exact solver angle handling: keep Mathematica movement directions in radians
   internally and flip sign to get Minecraft yaw radians. Apply Minecraft-style
   float32 angle indexing for `mcsin`/`mccos`
@@ -74,12 +73,15 @@ let mod concerns drive the core contracts.
 - Exact solver horizontal state currently uses double/float64 `x`, `z`, `vx`,
   and `vz` to match anon-noob mothball `player.py` under NumPy 1.26 scalar
   promotion. Movement-plan inputs derive acceleration/retention through the
-  same float32 movement-intermediate paths before simulation; legacy shorthand
-  `Imux`/`Imuz`/`Mmu` literals are normalized only as a compatibility fallback.
+  same float32 movement-intermediate paths before simulation.
 - Macro CSV details are documented in `schemas/macro_csv.md`. The external
   format columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`; yaw and pitch are
   relative degree deltas, not absolute angles.
-- Real orchestrator handoff to the exact solver is still unfinished.
+- Python has a first staged exact handoff command:
+  `python3 -m wolframtas_orchestrator solve-exact-input ...`. It derives
+  Mathematica arrays from `movement_plan`, runs strict and relaxed Mathematica
+  solves, checks objective drift, writes the generated exact input, and invokes
+  the C++ exact solver.
 
 ## Engineering Rules
 
@@ -115,13 +117,14 @@ let mod concerns drive the core contracts.
   `wolframscript -file mathematica/optimize.wls examples/simple_jump/inertia_mathematica_input.json`
 - Run orchestrator tests:
   `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator python3 -B -m pytest orchestrator/tests`
+- Run no-mock end-to-end tests with real Wolfram and the built C++ solver:
+  `python3 -B -m pytest e2e`
 
 ## Current Fixtures
 
 - `examples/simple_jump/mathematica_input.json`: simple water-transition optimizer fixture.
 - `examples/simple_jump/wall_ladder_mathematica_input.json`: separated `Imux`/`Imuz` plus ladder-style component override.
 - `examples/simple_jump/inertia_mathematica_input.json`: inertia hit and inertia avoid fixture.
-- `examples/simple_jump/exact_solver_input.json`: low-level exact-solver input fixture derived from the inertia fixture plus a selected movement direction.
 - `examples/simple_jump/flat_sprintjump_exact_solver_input.json`: input-first exact-solver fixture for flat sprintjump no-45, used to check the solver's NumPy-1.26-style horizontal recurrence.
 - `examples/involved_sim.wls`: user-provided larger handwritten Wolfram example.
 - `examples/involved_mathematica_input.json`: JSON port of the involved example.
@@ -141,10 +144,11 @@ let mod concerns drive the core contracts.
 - `Imux`/`Imuz` store per-slot horizontal velocity retention/drag multipliers.
 - Chained simulations assume the first `init` slot moves from tick 0 to tick 1.
   In movement-plan inputs, `kind: "init"` is an authoritative horizontal
-  velocity contribution with explicit `velocity.x`, `velocity.z`, `imux`, and
-  `imuz`; it is not validated against keyboard movement. The velocity magnitude
-  is used as the first `Mmu` entry, and the direction is represented by the
-  first movement-direction angle.
+  speed contribution with explicit `speed`, `imux`, and `imuz`; it is not
+  validated against keyboard movement. The speed is used as the first `Mmu`
+  entry, and the direction is represented by the first movement-direction angle.
+  The exact solver decomposes init speed with ordinary `std::sin`/`std::cos`,
+  not Minecraft `mcsin`/`mccos`.
 - Air drag is `0.91`. Flat normal-ground drag after a ground tick is
   `0.91 * 0.6 = 0.546`. Water drag is `0.8`.
 - No-45 forward movement uses the `0.98` input factor. 45-strafe uses `1.0`.

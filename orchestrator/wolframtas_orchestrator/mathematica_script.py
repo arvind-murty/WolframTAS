@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 
@@ -97,15 +98,46 @@ def render_mathematica_script(problem: dict[str, Any], *, source_name: str | Non
 
 
 def render_constraints(problem: dict[str, Any]) -> list[dict[str, str]]:
-    constraints = [
-        {"id": str(constraint["id"]), "expression": str(constraint["expression"])}
-        for constraint in problem.get("constraints", [])
-    ]
+    constraints: list[dict[str, str]] = []
+    for constraint in problem.get("constraints", []):
+        if "expression" in constraint:
+            constraints.append({"id": str(constraint["id"]), "expression": str(constraint["expression"])})
+            continue
+        if constraint.get("type") == "position_bounds":
+            constraints.extend(render_position_bounds_constraint(constraint))
+            continue
+        raise ValueError(f"unsupported Mathematica constraint shape: {constraint!r}")
 
     for event in problem.get("inertia_events", []):
         constraints.extend(render_inertia_event(event))
 
     return constraints
+
+
+def render_position_bounds_constraint(constraint: dict[str, Any]) -> list[dict[str, str]]:
+    constraint_id = str(constraint["id"])
+    slot = int(constraint["slot"])
+    tolerance = wolfram_number(float(constraint.get("mathematica_tolerance", 0.0)))
+    rendered: list[dict[str, str]] = []
+    for key, function, sense in (
+        ("min_x", "X", ">="),
+        ("max_x", "X", "<="),
+        ("min_z", "Z", ">="),
+        ("max_z", "Z", "<="),
+    ):
+        if key not in constraint:
+            continue
+        raw_value = wolfram_number(constraint[key])
+        value = f"({raw_value} - {tolerance})" if key.startswith("min_") else f"({raw_value} + {tolerance})"
+        rendered.append(
+            {
+                "id": f"{constraint_id}_{key}",
+                "expression": f"{function}[F, {slot}] {sense} {value}",
+            }
+        )
+    if not rendered:
+        raise ValueError(f"position_bounds constraint has no bounds: {constraint_id}")
+    return rendered
 
 
 def render_inertia_event(event: dict[str, Any]) -> list[dict[str, str]]:
@@ -166,5 +198,5 @@ def wolfram_number(value: Any) -> str:
     if isinstance(value, int):
         return str(value)
     if isinstance(value, float):
-        return repr(value)
+        return format(Decimal(repr(value)), "f")
     raise ValueError(f"expected numeric value, got {type(value).__name__}")

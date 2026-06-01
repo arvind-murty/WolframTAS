@@ -20,7 +20,7 @@
       {
         "slot": 1,
         "kind": "init",
-        "velocity": { "x": 0.0, "z": 0.0 },
+        "speed": 0.0,
         "imux": 0.91,
         "imuz": 0.91
       },
@@ -105,7 +105,7 @@
   },
   "derived_model": {
     "diagnostics": {
-      "description": "The exact solver derives Imux, Imuz, and Mmu from movement_plan. Slot 1 is a zero init velocity with air retention; slot 2 is the flat-ground sprint-jump tick; later slots are airborne sprint ticks."
+      "description": "The exact solver derives Imux, Imuz, and Mmu from movement_plan. Slot 1 is a zero init speed with air retention; slot 2 is the flat-ground sprint-jump tick; later slots are airborne sprint ticks."
     }
   },
   "optimal_solution": {

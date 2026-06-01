@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from wolframtas_orchestrator.movement_model import (
     air_retention,
+    air_sprint_45_mmu,
     air_sprint_no45_mmu,
+    air_walk_45_mmu,
     air_walk_no45_mmu,
     derive_movement_model,
     derive_movement_arrays,
@@ -17,7 +19,9 @@ def test_known_no45_values_match_reference_paths() -> None:
     assert air_retention() == 0.9100000262260437
     assert flat_sprint_jump_no45_mmu() == 0.32739998400211334
     assert air_sprint_no45_mmu() == 0.0254799984395504
+    assert air_sprint_45_mmu() == 0.025999998673796654
     assert air_walk_no45_mmu() == 0.019600000232458115
+    assert air_walk_45_mmu() == 0.019999999552965164
     assert flat_walk_no45_mmu() == 0.09800000488758087
 
 
@@ -29,7 +33,7 @@ def test_derive_flat_sprintjump_arrays_from_movement_plan() -> None:
             {
                 "slot": 1,
                 "kind": "init",
-                "velocity": {"x": 0.0, "z": 0.0},
+                "speed": 0.0,
                 "imux": air_retention(),
                 "imuz": air_retention(),
             },
@@ -69,7 +73,7 @@ def test_derive_init_slot_as_first_mmu_entry() -> None:
             {
                 "slot": 1,
                 "kind": "init",
-                "velocity": {"x": 0.125, "z": 0.25},
+                "speed": 0.25,
                 "imux": air_retention(),
                 "imuz": flat_ground_retention(),
             }
@@ -81,5 +85,27 @@ def test_derive_init_slot_as_first_mmu_entry() -> None:
     assert model["arrays"] == {
         "imux": [air_retention()],
         "imuz": [flat_ground_retention()],
-        "mmu": [0.2795084971874737],
+        "mmu": [0.25],
     }
+
+
+def test_derive_air_sprint_45_from_movement_plan() -> None:
+    plan = {
+        "version": 1,
+        "slot_indexing": "1_based",
+        "slots": [
+            {
+                "slot": 1,
+                "kind": "movement",
+                "controls": {"forward": 1, "strafe": 1, "jump": False, "sneak": False, "sprint": True},
+                "acceleration": {"medium": "air", "input": "forward_45"},
+                "retention": {"medium": "air"},
+            }
+        ],
+    }
+
+    arrays = derive_movement_arrays(plan)
+
+    assert arrays["imux"] == [air_retention()]
+    assert arrays["imuz"] == [air_retention()]
+    assert arrays["mmu"] == [air_sprint_45_mmu()]

@@ -66,8 +66,7 @@ def derive_movement_model(movement_plan: dict[str, Any]) -> dict[str, Any]:
         if slot.get("kind", "movement") == "init":
             imux.append(float(slot["imux"]))
             imuz.append(float(slot["imuz"]))
-            velocity = slot["velocity"]
-            mmu.append(math.hypot(float(velocity["x"]), float(velocity["z"])))
+            mmu.append(float(slot["speed"]))
             continue
 
         retention = derive_retention(slot)
@@ -106,17 +105,45 @@ def derive_mmu(slot: dict[str, Any]) -> float:
     strafe = controls.get("strafe", 0)
     if forward == 0 and strafe == 0:
         return 0.0
-    if forward != 1 or strafe != 0:
-        raise ValueError("only no-45 forward movement is supported by movement-plan v1")
+    input_mode = acceleration.get("input", "no45_forward")
+    if input_mode == "no45_forward" and (forward != 1 or strafe != 0):
+        raise ValueError("no45_forward requires forward=1 and strafe=0")
+    if input_mode == "forward_45" and (forward != 1 or abs(strafe) != 1):
+        raise ValueError("forward_45 requires forward=1 and abs(strafe)=1")
 
     medium = acceleration.get("medium")
     sprint = bool(controls.get("sprint", False))
     jump = bool(controls.get("jump", False))
     if medium == "ground":
         if sprint and jump:
-            return flat_sprint_jump_no45_mmu()
+            movement = flat_sprint_jump_no45_mmu()
+            if input_mode == "forward_45":
+                movement += flat_ground_45_delta()
+            return movement
         if not sprint:
-            return flat_walk_no45_mmu()
+            movement = flat_walk_no45_mmu()
+            if input_mode == "forward_45":
+                movement = 0.1
+            return movement
     if medium == "air":
-        return air_sprint_no45_mmu() if sprint else air_walk_no45_mmu()
+        if sprint:
+            return air_sprint_45_mmu() if input_mode == "forward_45" else air_sprint_no45_mmu()
+        return air_walk_45_mmu() if input_mode == "forward_45" else air_walk_no45_mmu()
     raise ValueError(f"unsupported movement slot acceleration: medium={medium!r}, sprint={sprint}, jump={jump}")
+
+
+def flat_ground_45_delta() -> float:
+    movement = fl(0.1)
+    movement = fl(float(movement) * (1.0 + float(fl(0.3))))
+    drag = flat_ground_retention()
+    movement = fl(movement * fl(fl(0.16277136) / fl(drag * drag * drag)))
+    return float(movement) - float(no45_forward_acceleration(movement))
+
+
+def air_sprint_45_mmu() -> float:
+    movement = fl(0.02)
+    return fl(float(movement) + float(movement) * 0.3)
+
+
+def air_walk_45_mmu() -> float:
+    return fl(0.02)

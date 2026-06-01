@@ -8,8 +8,8 @@ Current priority order:
 2. Define the exact solver input contract from the optimizer model plus the
    selected Mathematica movement directions.
 3. Document the existing external macro-tool CSV output format.
-4. Implement the Python orchestrator so it converts a problem definition into a
-   macro CSV by running Mathematica and the C++ exact solver.
+4. Harden the staged Python orchestrator flow from an exact-input template to
+   strict Mathematica, relaxed Mathematica, and C++ exact solving.
 5. Return to Forge mod GUI/in-game quality-of-life features later.
 
 The first two contracts now have v1 low-level schemas:
@@ -135,13 +135,33 @@ python3 -m wolframtas_orchestrator examples/simple_jump/request.json \
   --exact-solution-out /tmp/wolframtas_exact_solution.json
 ```
 
+## Staged Exact Flow
+
+For current input-first fixtures, the orchestrator can run the two-pass
+Mathematica flow and hand the relaxed solution to the C++ exact solver:
+
+```sh
+PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator solve-exact-input \
+  examples/simple_jump/repair_exact_solver_input.json \
+  --strict-out /tmp/wolframtas_strict.json \
+  --relaxed-out /tmp/wolframtas_relaxed.json \
+  --exact-input-out /tmp/wolframtas_exact_input.json \
+  --exact-out /tmp/wolframtas_exact.json \
+  --solver-command solver/build/wolframtas_solver
+```
+
+This command derives Mathematica `Imux`/`Imuz`/`Mmu` arrays from
+`movement_plan`, materializes typed `position_bounds` constraints into Wolfram
+expressions, solves strict constraints first, solves relaxed constraints second,
+checks relaxed objective drift against `solution_tolerance`, then invokes the
+exact solver with the relaxed movement directions.
+
 ## C++ Solver
 
 The solver is a small CLI that reads exact-solver input JSON from stdin,
 simulates the horizontal movement model, and writes exact solution JSON to
-stdout. New exact-solver inputs should provide `movement_plan`; the solver
-derives supported `Imux`/`Imuz`/`Mmu` values from that semantic input and uses
-legacy arrays only as a compatibility fallback. It keeps movement directions in
+stdout. Exact-solver inputs provide `movement_plan`; the solver derives
+supported `Imux`/`Imuz`/`Mmu` values from that semantic input. It keeps movement directions in
 radians internally, applies
 Minecraft-style float32 angle indexing for `mcsin`/`mccos`, computes the indexed
 sine value with `std::sin` on demand, and converts to degrees only for
@@ -153,8 +173,24 @@ mothball `player.py` behavior with the flat sprintjump no-45 fixture.
 ```sh
 cmake -S solver -B solver/build
 cmake --build solver/build
-solver/build/wolframtas_solver < examples/simple_jump/exact_solver_input.json
+ctest --test-dir solver/build --output-on-failure
 solver/build/wolframtas_solver < examples/simple_jump/flat_sprintjump_exact_solver_input.json
+```
+
+## Tests
+
+Run unit/component tests without real Wolfram:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator python3 -B -m pytest orchestrator/tests
+ctest --test-dir solver/build --output-on-failure
+```
+
+Run no-mock end-to-end tests separately. These call the real `wolframscript`
+and the built C++ solver:
+
+```sh
+python3 -B -m pytest e2e
 ```
 
 ## Forge Mod

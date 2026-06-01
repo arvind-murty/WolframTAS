@@ -3,7 +3,7 @@
   "$id": "https://wolframtas.local/schemas/exact_solver_input.schema.json",
   "title": "WolframTAS Exact Solver Input",
   "type": "object",
-  "required": ["version", "slot_indexing", "n", "angle_domain", "optimal_solution"],
+  "required": ["version", "slot_indexing", "n", "angle_domain", "movement_plan", "optimal_solution"],
   "properties": {
     "version": { "type": "integer", "const": 1 },
     "name": { "type": "string" },
@@ -39,24 +39,31 @@
       },
       "additionalProperties": false
     },
-    "arrays": {
-      "$ref": "#/$defs/arrays",
-      "deprecated": true
-    },
-    "component_overrides": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/component_override" },
-      "deprecated": true
-    },
-    "inertia_events": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/inertia_event" },
-      "deprecated": true
-    },
     "constraints": {
       "type": "array",
-      "items": { "$ref": "#/$defs/exact_constraint" },
-      "deprecated": true
+      "items": { "$ref": "#/$defs/exact_constraint" }
+    },
+    "exact_objective": {
+      "type": "object",
+      "required": ["type", "axis", "slot"],
+      "properties": {
+        "type": { "type": "string", "enum": ["position"] },
+        "axis": { "type": "string", "enum": ["x", "z"] },
+        "slot": { "type": "integer", "minimum": 0 },
+        "target_value": { "type": "number" },
+        "solution_tolerance": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "exact_solver": {
+      "type": "object",
+      "properties": {
+        "max_repair_iterations": { "type": "integer", "minimum": 0 },
+        "max_candidate_evaluations": { "type": "integer", "minimum": 0 },
+        "top_k_moves": { "type": "integer", "minimum": 1 },
+        "max_index_delta_per_iteration": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
     },
     "optimal_solution": {
       "type": "object",
@@ -83,16 +90,6 @@
     }
   },
   "additionalProperties": false,
-  "anyOf": [
-    { "required": ["movement_plan"] },
-    {
-      "required": ["derived_model"],
-      "properties": {
-        "derived_model": { "required": ["arrays"] }
-      }
-    },
-    { "required": ["arrays"] }
-  ],
   "$defs": {
     "number_array": {
       "type": "array",
@@ -159,10 +156,17 @@
     },
     "exact_constraint": {
       "type": "object",
-      "required": ["id", "expression"],
+      "required": ["id", "type", "slot"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
-        "expression": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["position_bounds"] },
+        "slot": { "type": "integer", "minimum": 0 },
+        "min_x": { "type": "number" },
+        "max_x": { "type": "number" },
+        "min_z": { "type": "number" },
+        "max_z": { "type": "number" },
+        "mathematica_tolerance": { "type": "number", "minimum": 0 },
+        "exact_tolerance": { "type": "number", "minimum": 0 },
         "reason": { "type": "string" }
       },
       "additionalProperties": false

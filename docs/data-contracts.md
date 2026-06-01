@@ -50,10 +50,11 @@ numbers:
 
 - `slots[*].kind`: either `init` for an authoritative incoming horizontal
   velocity slot or `movement` for a normal Minecraft movement slot.
-- `init` slots provide `velocity.x`, `velocity.z`, `imux`, and `imuz` directly.
-  The velocity is not validated against keyboard movement; its horizontal
-  magnitude is plugged in as the first `Mmu` entry, and its direction is carried
-  by the slot's movement-direction angle.
+- `init` slots provide `speed`, `imux`, and `imuz` directly. The speed is not
+  validated against keyboard movement; it is plugged in as the first `Mmu`
+  entry, and its direction is carried by the slot's movement-direction angle.
+  The exact solver decomposes init speed with `std::sin`/`std::cos`, not
+  Minecraft `mcsin`/`mccos`, because init is an external speed vector.
 - `slots[*].controls`: fixed keyboard inputs for the slot.
 - `slots[*].acceleration.medium`: the movement acceleration context, currently
   supporting the flat sprint-jump/no-45 cases used by fixtures.
@@ -76,6 +77,9 @@ Expected role:
 - Return approximate movement-direction angles.
 - Include enough status/diagnostic information for the orchestrator to decide
   whether to continue to exact solving.
+- In the staged flow, typed `position_bounds` constraints are materialized by
+  the orchestrator into expression constraints before calling the canonical
+  optimizer.
 
 ## Exact Solver Input
 
@@ -98,12 +102,14 @@ result:
   human inspection.
 - `optimal_solution.points`: optional Mathematica model points for diagnostics.
 - `derived_model`: optional generated Mathematica arrays, constraints, and
-  diagnostics. The exact solver may use this as a compatibility fallback, but
-  movement-plan inputs should not depend on it for motion.
-
-Legacy top-level `arrays`, `component_overrides`, `inertia_events`, and
-`constraints` are still accepted for existing low-level fixtures, but new
-fixtures should not hand-author them as the primary movement source.
+  diagnostics. This is for inspection only; the exact solver derives movement
+  from `movement_plan`.
+- `constraints`: typed exact constraints. Each constraint can carry its own
+  `mathematica_tolerance` for relaxed Wolfram solves and `exact_tolerance` for
+  byte-exact validation.
+- `exact_objective`: objective axis/slot plus solution tolerance used to keep
+  the relaxed Mathematica result and exact repair close to the approximate
+  route.
 
 Movement-state timing rules that the contracts must be able to represent:
 
@@ -129,8 +135,6 @@ Exact-solver numeric policy:
 - Movement-plan inputs derive acceleration and retention values through the same
   float32 movement-intermediate operation sequences used by the reference
   implementation before applying them to the double state.
-- Legacy low-level shorthand values such as `0.546`, `0.3274`, and `0.02548`
-  are normalized through those paths only as a compatibility fallback.
 - Movement direction stays in radians internally. The solver flips sign from
   Mathematica movement direction to Minecraft yaw radians.
 - `mcsin`/`mccos` use Minecraft's float32 angle indexing formulas with a

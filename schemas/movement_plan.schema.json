@@ -24,7 +24,7 @@
         "controls": { "$ref": "#/$defs/controls" },
         "acceleration": { "$ref": "#/$defs/acceleration" },
         "retention": { "$ref": "#/$defs/retention" },
-        "velocity": { "$ref": "#/$defs/vec2" },
+        "speed": { "type": "number", "minimum": 0 },
         "imux": { "type": "number" },
         "imuz": { "type": "number" },
         "component_overrides": {
@@ -44,18 +44,9 @@
         },
         {
           "if": { "properties": { "kind": { "const": "init" } }, "required": ["kind"] },
-          "then": { "required": ["velocity", "imux", "imuz"] }
+          "then": { "required": ["speed", "imux", "imuz"] }
         }
       ]
-    },
-    "vec2": {
-      "type": "object",
-      "required": ["x", "z"],
-      "properties": {
-        "x": { "type": "number" },
-        "z": { "type": "number" }
-      },
-      "additionalProperties": false
     },
     "controls": {
       "type": "object",
@@ -74,7 +65,7 @@
       "required": ["medium"],
       "properties": {
         "medium": { "type": "string", "enum": ["ground", "air", "water", "lava"] },
-        "input": { "type": "string", "enum": ["no45_forward"] }
+        "input": { "type": "string", "enum": ["no45_forward", "forward_45"] }
       },
       "additionalProperties": false
     },
