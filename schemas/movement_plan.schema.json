@@ -24,6 +24,7 @@
         "controls": { "$ref": "#/$defs/controls" },
         "acceleration": { "$ref": "#/$defs/acceleration" },
         "retention": { "$ref": "#/$defs/retention" },
+        "wall_hit": { "$ref": "#/$defs/wall_hit" },
         "speed": { "type": "number", "minimum": 0 },
         "imux": { "type": "number" },
         "imuz": { "type": "number" },
@@ -75,6 +76,20 @@
       "properties": {
         "medium": { "type": "string", "enum": ["flat_ground", "air", "water", "lava", "none"] },
         "slipperiness": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "wall_hit": {
+      "type": "object",
+      "required": ["axes"],
+      "properties": {
+        "axes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["x", "z"] },
+          "uniqueItems": true
+        },
+        "reason": { "type": "string" }
       },
       "additionalProperties": false
     },

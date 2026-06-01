@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
 #include <vector>
 
 namespace {
@@ -24,7 +26,12 @@ wolframtas::ExactInput stationary_input() {
 }
 
 void assert_close(double actual, double expected) {
-    assert(std::abs(actual - expected) <= 1e-15);
+    if (std::abs(actual - expected) > 1e-15) {
+        std::cerr << std::setprecision(17)
+                  << "expected " << expected << ", got " << actual
+                  << ", diff " << std::abs(actual - expected) << "\n";
+        assert(false);
+    }
 }
 
 } // namespace
@@ -74,6 +81,45 @@ int main() {
         assert_close(evaluation.objective_value, 0.0);
         assert_close(evaluation.objective_deviation, 0.2);
         assert_close(evaluation.objective_residual, 0.15000000000000002);
+    }
+    {
+        wolframtas::ExactInput input;
+        input.n = 1;
+        wolframtas::MovementSlot slot;
+        slot.slot = 1;
+        slot.kind = "init";
+        slot.init_speed = 0.01;
+        slot.init_imux = 0.91;
+        slot.init_imuz = 0.91;
+        input.movement_slots.push_back(slot);
+        input.movement_direction_radians.push_back(0.0);
+        input.inertia_events.push_back(wolframtas::InertiaEvent{"hit_z", "hit", "z", "", 1, 0.005});
+        wolframtas::derive_arrays_from_movement_plan(input);
+        wolframtas::validate_exact_input(input);
+
+        const wolframtas::Evaluation evaluation = wolframtas::evaluate_candidate(input, wolframtas::seed_yaw_indices(input));
+        assert(!evaluation.feasible);
+        assert(evaluation.worst_constraint_id == "hit_z");
+        assert_close(evaluation.residual_norm, 0.004100000000000001);
+    }
+    {
+        wolframtas::ExactInput input;
+        input.n = 1;
+        wolframtas::MovementSlot slot;
+        slot.slot = 1;
+        slot.kind = "init";
+        slot.init_speed = 0.01;
+        slot.init_imux = 0.91;
+        slot.init_imuz = 0.91;
+        input.movement_slots.push_back(slot);
+        input.movement_direction_radians.push_back(0.0);
+        input.inertia_events.push_back(wolframtas::InertiaEvent{"avoid_z", "avoid", "z", "positive", 1, 0.005});
+        wolframtas::derive_arrays_from_movement_plan(input);
+        wolframtas::validate_exact_input(input);
+
+        const wolframtas::Evaluation evaluation = wolframtas::evaluate_candidate(input, wolframtas::seed_yaw_indices(input));
+        assert(evaluation.feasible);
+        assert_close(evaluation.residual_norm, 0.0);
     }
     return 0;
 }

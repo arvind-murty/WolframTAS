@@ -43,6 +43,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/exact_constraint" }
     },
+    "inertia_events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/inertia_event" }
+    },
     "exact_objective": {
       "type": "object",
       "required": ["type", "axis", "slot"],
@@ -141,7 +145,7 @@
     },
     "inertia_event": {
       "type": "object",
-      "required": ["id", "type", "axis", "slot", "retention_multiplier"],
+      "required": ["id", "type", "axis", "slot"],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "type": { "type": "string", "enum": ["hit", "avoid"] },

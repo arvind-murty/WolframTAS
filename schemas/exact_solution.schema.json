@@ -6,7 +6,7 @@
   "required": ["version", "status", "angles_discrete", "states_exact", "macro_rows", "diagnostics"],
   "properties": {
     "version": { "type": "integer", "const": 1 },
-    "status": { "type": "string", "enum": ["solved", "unsolved", "error"] },
+    "status": { "type": "string", "enum": ["solved", "failed", "error"] },
     "angles_discrete": {
       "type": "array",
       "items": { "$ref": "#/$defs/discrete_angle" }
@@ -19,7 +19,7 @@
       "type": "array",
       "items": { "$ref": "#/$defs/macro_row" }
     },
-    "diagnostics": { "type": "object" }
+    "diagnostics": { "$ref": "#/$defs/diagnostics" }
   },
   "additionalProperties": false,
   "$defs": {
@@ -72,6 +72,48 @@
         "l": { "type": "integer", "minimum": 0 },
         "r": { "type": "integer", "minimum": 0 },
         "count": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "changed_angle_index": {
+      "type": "object",
+      "required": ["slot", "from", "to", "delta"],
+      "properties": {
+        "slot": { "type": "integer", "minimum": 1 },
+        "from": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "to": { "type": "integer", "minimum": 0, "maximum": 65535 },
+        "delta": { "type": "integer", "minimum": -32768, "maximum": 32767 }
+      },
+      "additionalProperties": false
+    },
+    "diagnostics": {
+      "type": "object",
+      "required": [
+        "mode",
+        "state_count",
+        "initial_residual_norm",
+        "final_residual_norm",
+        "worst_constraint_id",
+        "candidate_evaluations",
+        "repair_iterations",
+        "exact_objective_value",
+        "objective_deviation",
+        "changed_angle_indices"
+      ],
+      "properties": {
+        "mode": { "type": "string" },
+        "state_count": { "type": "integer", "minimum": 1 },
+        "initial_residual_norm": { "type": "string" },
+        "final_residual_norm": { "type": "string" },
+        "worst_constraint_id": { "type": "string" },
+        "candidate_evaluations": { "type": "integer", "minimum": 0 },
+        "repair_iterations": { "type": "integer", "minimum": 0 },
+        "exact_objective_value": { "type": "string" },
+        "objective_deviation": { "type": "string" },
+        "changed_angle_indices": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/changed_angle_index" }
+        }
       },
       "additionalProperties": false
     }

@@ -53,6 +53,35 @@ Controls macro_controls_for_slot(const ExactInput& input, int index) {
     return controls;
 }
 
+struct MacroRow {
+    Controls controls;
+    double yaw = 0.0;
+    double pitch = 0.0;
+    int left_click = 0;
+    int right_click = 0;
+    int count = 1;
+};
+
+std::vector<MacroRow> build_macro_rows(const ExactInput& input, const std::vector<int>& yaw_indices) {
+    std::vector<MacroRow> rows;
+    rows.reserve(static_cast<std::size_t>(input.n));
+    for (int index = 0; index < input.n; ++index) {
+        const double current_yaw_degrees = index_to_degrees(yaw_indices.at(static_cast<std::size_t>(index)));
+        const double previous_yaw_degrees = index == 0
+            ? 0.0
+            : index_to_degrees(yaw_indices.at(static_cast<std::size_t>(index - 1)));
+        rows.push_back(MacroRow{
+            macro_controls_for_slot(input, index),
+            wrap_degrees(current_yaw_degrees - previous_yaw_degrees),
+            0.0,
+            0,
+            0,
+            1,
+        });
+    }
+    return rows;
+}
+
 void write_angles_discrete(std::ostream& output, const ExactInput& input, const std::vector<int>& yaw_indices) {
     output << "  \"angles_discrete\": [\n";
     for (int index = 0; index < input.n; ++index) {
@@ -83,24 +112,23 @@ void write_states_exact(std::ostream& output, const std::vector<State>& states) 
 }
 
 void write_macro_rows(std::ostream& output, const ExactInput& input, const std::vector<int>& yaw_indices) {
+    const std::vector<MacroRow> rows = build_macro_rows(input, yaw_indices);
     output << "  \"macro_rows\": [\n";
-    for (int index = 0; index < input.n; ++index) {
-        const Controls controls = macro_controls_for_slot(input, index);
-        const double current_yaw_degrees = index_to_degrees(yaw_indices.at(static_cast<std::size_t>(index)));
-        const double previous_yaw_degrees = index == 0
-            ? 0.0
-            : index_to_degrees(yaw_indices.at(static_cast<std::size_t>(index - 1)));
-        const double relative_yaw = wrap_degrees(current_yaw_degrees - previous_yaw_degrees);
-        output << "    { \"w\": " << (controls.forward > 0 ? "true" : "false")
-               << ", \"a\": " << (controls.strafe > 0 ? "true" : "false")
-               << ", \"s\": " << (controls.forward < 0 ? "true" : "false")
-               << ", \"d\": " << (controls.strafe < 0 ? "true" : "false")
-               << ", \"p\": " << (controls.sprint ? "true" : "false")
-               << ", \"n\": " << (controls.sneak ? "true" : "false")
-               << ", \"j\": " << (controls.jump ? "true" : "false")
-               << ", \"yaw\": " << json_number(relative_yaw)
-               << ", \"pitch\": 0, \"l\": 0, \"r\": 0, \"count\": 1 }";
-        output << (index + 1 == input.n ? "\n" : ",\n");
+    for (std::size_t index = 0; index < rows.size(); ++index) {
+        const MacroRow& row = rows[index];
+        output << "    { \"w\": " << (row.controls.forward > 0 ? "true" : "false")
+               << ", \"a\": " << (row.controls.strafe > 0 ? "true" : "false")
+               << ", \"s\": " << (row.controls.forward < 0 ? "true" : "false")
+               << ", \"d\": " << (row.controls.strafe < 0 ? "true" : "false")
+               << ", \"p\": " << (row.controls.sprint ? "true" : "false")
+               << ", \"n\": " << (row.controls.sneak ? "true" : "false")
+               << ", \"j\": " << (row.controls.jump ? "true" : "false")
+               << ", \"yaw\": " << json_number(row.yaw)
+               << ", \"pitch\": " << json_number(row.pitch)
+               << ", \"l\": " << row.left_click
+               << ", \"r\": " << row.right_click
+               << ", \"count\": " << row.count << " }";
+        output << (index + 1 == rows.size() ? "\n" : ",\n");
     }
     output << "  ],\n";
 }
@@ -164,6 +192,25 @@ void write_solution_json(std::ostream& output, const ExactInput& input, const Re
     write_macro_rows(output, input, yaw_indices);
     write_diagnostics(output, input, repair_result, states, yaw_indices);
     output << "}\n";
+}
+
+void write_macro_csv(std::ostream& output, const ExactInput& input, const RepairResult& repair_result) {
+    const std::vector<MacroRow> rows = build_macro_rows(input, repair_result.yaw_indices);
+    output << "W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT\n";
+    for (const MacroRow& row : rows) {
+        output << (row.controls.forward > 0 ? "true" : "false") << ","
+               << (row.controls.strafe > 0 ? "true" : "false") << ","
+               << (row.controls.forward < 0 ? "true" : "false") << ","
+               << (row.controls.strafe < 0 ? "true" : "false") << ","
+               << (row.controls.sprint ? "true" : "false") << ","
+               << (row.controls.sneak ? "true" : "false") << ","
+               << (row.controls.jump ? "true" : "false") << ","
+               << json_number(row.yaw) << ","
+               << json_number(row.pitch) << ","
+               << row.left_click << ","
+               << row.right_click << ","
+               << row.count << "\n";
+    }
 }
 
 } // namespace wolframtas

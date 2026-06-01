@@ -1,41 +1,62 @@
 {
   "version": 1,
   "minecraft_version": "1.8.9",
+  "name": "simple-jump-request",
+  "slot_indexing": "1_based",
+  "n": 2,
   "angle_domain": {
     "table_size": 65536
   },
-  "start_state": {
+  "initial_state": {
     "position": { "x": 0.0, "y": 64.0, "z": 0.0 },
     "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 },
     "yaw": 0.0,
     "pitch": 0.0,
     "on_ground": true
   },
-  "keyboard_inputs": [
-    { "tick": 0, "forward": 1, "strafe": 0, "jump": true, "sneak": false, "sprint": true },
-    { "tick": 1, "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true }
-  ],
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      {
+        "slot": 1,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": true, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "ground", "input": "no45_forward" },
+        "retention": { "medium": "flat_ground" }
+      },
+      {
+        "slot": 2,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": false, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "air", "input": "no45_forward" },
+        "retention": { "medium": "air" }
+      }
+    ]
+  },
   "constraints": [
     {
       "id": "land_on_target",
-      "type": "position_inside_box",
-      "tick": 20,
-      "parameters": {
-        "min": { "x": 3.0, "y": 64.0, "z": 0.0 },
-        "max": { "x": 4.0, "y": 65.0, "z": 1.0 }
-      }
+      "type": "position_bounds",
+      "slot": 2,
+      "min_z": 0.0,
+      "max_z": 1.0,
+      "mathematica_tolerance": 0.0001,
+      "exact_tolerance": 0.001
     }
   ],
-  "objectives": [
-    {
-      "id": "minimize_yaw_change",
-      "type": "minimize_total_angle_delta",
-      "weight": 1.0,
-      "parameters": {}
-    }
-  ],
+  "exact_objective": {
+    "type": "position",
+    "axis": "z",
+    "slot": 2,
+    "solution_tolerance": 0.001
+  },
   "solver": {
-    "max_ticks": 20,
+    "solution_tolerance": 0.001,
+    "default_relaxed_tolerance": 0.0001,
+    "max_repair_iterations": 4,
+    "max_candidate_evaluations": 200,
+    "top_k_moves": 4,
     "timeout_seconds": 10.0
   }
 }

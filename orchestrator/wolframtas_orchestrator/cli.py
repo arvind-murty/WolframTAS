@@ -228,6 +228,8 @@ def exact_template_to_mathematica_problem(
     fill_missing_tolerance: bool,
 ) -> dict[str, Any]:
     movement_model = derive_movement_model(exact_template["movement_plan"])
+    arrays = copy.deepcopy(movement_model["arrays"])
+    inertia_events = mathematica_inertia_events(exact_template.get("inertia_events", []), arrays)
     constraints = copy.deepcopy(exact_template.get("constraints", []))
     for constraint in constraints:
         if fill_missing_tolerance:
@@ -245,8 +247,9 @@ def exact_template_to_mathematica_problem(
         "name": exact_template.get("name", ""),
         "slot_indexing": "1_based",
         "n": exact_template["n"],
-        "arrays": movement_model["arrays"],
+        "arrays": arrays,
         "component_overrides": copy.deepcopy(exact_template.get("component_overrides", [])),
+        "inertia_events": inertia_events,
         "objective": {
             "sense": objective.get("sense", "maximize"),
             "expression": objective.get("expression", f"{function}[F, {slot}]"),
@@ -254,6 +257,19 @@ def exact_template_to_mathematica_problem(
         "constraints": constraints,
         "optimizer": copy.deepcopy(exact_template.get("optimizer", {"accuracy_goal": 20, "precision_goal": 20})),
     }
+
+
+def mathematica_inertia_events(events: list[dict[str, Any]], arrays: dict[str, list[float]]) -> list[dict[str, Any]]:
+    rendered: list[dict[str, Any]] = []
+    for event in copy.deepcopy(events):
+        axis = event["axis"]
+        slot = int(event["slot"])
+        array_key = "imux" if axis == "x" else "imuz"
+        event["retention_multiplier"] = arrays[array_key][slot - 1]
+        if event["type"] == "hit":
+            arrays[array_key][slot - 1] = 0.0
+        rendered.append(event)
+    return rendered
 
 
 def assert_solution_close(strict_solution: dict[str, Any], relaxed_solution: dict[str, Any], tolerance: float) -> None:
@@ -309,11 +325,13 @@ def validate_request_shape(request: dict[str, Any]) -> None:
     required = {
         "version",
         "minecraft_version",
+        "slot_indexing",
+        "n",
         "angle_domain",
-        "start_state",
-        "keyboard_inputs",
+        "initial_state",
+        "movement_plan",
         "constraints",
-        "objectives",
+        "exact_objective",
         "solver",
     }
     missing = sorted(required.difference(request))
@@ -356,7 +374,7 @@ def parse_process_json(name: str, stdout: str) -> dict[str, Any]:
 
 
 def fixture_exact_solution(approximate_solution: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
-    keyboard_by_tick = {row["tick"]: row for row in request.get("keyboard_inputs", [])}
+    keyboard_by_tick = movement_controls_by_tick(request)
     macro_rows = []
     angles_discrete = []
 
@@ -398,8 +416,28 @@ def fixture_exact_solution(approximate_solution: dict[str, Any], request: dict[s
         "angles_discrete": angles_discrete,
         "states_exact": [],
         "macro_rows": macro_rows,
-        "diagnostics": {"mode": "fixture"},
+        "diagnostics": {
+            "mode": "fixture",
+            "state_count": 0,
+            "initial_residual_norm": "0",
+            "final_residual_norm": "0",
+            "worst_constraint_id": "",
+            "candidate_evaluations": 0,
+            "repair_iterations": 0,
+            "exact_objective_value": "0",
+            "objective_deviation": "0",
+            "changed_angle_indices": [],
+        },
     }
+
+
+def movement_controls_by_tick(request: dict[str, Any]) -> dict[int, dict[str, Any]]:
+    controls: dict[int, dict[str, Any]] = {}
+    for slot in request.get("movement_plan", {}).get("slots", []):
+        if slot.get("kind") != "movement":
+            continue
+        controls[int(slot["slot"]) - 1] = slot["controls"]
+    return controls
 
 
 def empty_keyboard(tick: int) -> dict[str, Any]:

@@ -175,6 +175,8 @@ cmake -S solver -B solver/build
 cmake --build solver/build
 ctest --test-dir solver/build --output-on-failure
 solver/build/wolframtas_solver < examples/simple_jump/flat_sprintjump_exact_solver_input.json
+solver/build/wolframtas_solver --macro-csv-out /tmp/wolframtas_macro.csv \
+  < examples/simple_jump/flat_sprintjump_exact_solver_input.json
 ```
 
 ## Tests

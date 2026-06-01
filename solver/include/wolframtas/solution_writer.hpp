@@ -7,5 +7,6 @@
 namespace wolframtas {
 
 void write_solution_json(std::ostream& output, const ExactInput& input, const RepairResult& repair_result);
+void write_macro_csv(std::ostream& output, const ExactInput& input, const RepairResult& repair_result);
 
 } // namespace wolframtas

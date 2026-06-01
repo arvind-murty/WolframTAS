@@ -11,6 +11,15 @@
     { "w": true, "a": false, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0.0, "pitch": 0.0, "l": 0, "r": 0, "count": 1 }
   ],
   "diagnostics": {
-    "fixture": true
+    "mode": "fixture",
+    "state_count": 0,
+    "initial_residual_norm": "0",
+    "final_residual_norm": "0",
+    "worst_constraint_id": "",
+    "candidate_evaluations": 0,
+    "repair_iterations": 0,
+    "exact_objective_value": "0",
+    "objective_deviation": "0",
+    "changed_angle_indices": []
   }
 }

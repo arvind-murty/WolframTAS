@@ -6,16 +6,21 @@
   "required": [
     "version",
     "minecraft_version",
+    "slot_indexing",
+    "n",
     "angle_domain",
-    "start_state",
-    "keyboard_inputs",
+    "initial_state",
+    "movement_plan",
     "constraints",
-    "objectives",
+    "exact_objective",
     "solver"
   ],
   "properties": {
     "version": { "type": "integer", "const": 1 },
     "minecraft_version": { "type": "string", "const": "1.8.9" },
+    "name": { "type": "string" },
+    "slot_indexing": { "type": "string", "const": "1_based" },
+    "n": { "type": "integer", "minimum": 1 },
     "angle_domain": {
       "type": "object",
       "required": ["table_size"],
@@ -24,28 +29,46 @@
       },
       "additionalProperties": false
     },
-    "start_state": { "$ref": "#/$defs/player_state" },
-    "keyboard_inputs": {
-      "type": "array",
-      "items": { "$ref": "#/$defs/keyboard_input" }
-    },
+    "initial_state": { "$ref": "#/$defs/player_state" },
     "movement_plan": { "$ref": "movement_plan.schema.json" },
     "constraints": {
       "type": "array",
-      "items": { "$ref": "#/$defs/constraint" }
+      "items": { "$ref": "#/$defs/exact_constraint" }
     },
-    "objectives": {
+    "inertia_events": {
       "type": "array",
-      "items": { "$ref": "#/$defs/objective" }
+      "items": { "$ref": "#/$defs/inertia_event" }
+    },
+    "exact_objective": {
+      "type": "object",
+      "required": ["type", "axis", "slot"],
+      "properties": {
+        "type": { "type": "string", "enum": ["position"] },
+        "axis": { "type": "string", "enum": ["x", "z"] },
+        "slot": { "type": "integer", "minimum": 0 },
+        "target_value": { "type": "number" },
+        "solution_tolerance": { "type": "number", "minimum": 0 },
+        "sense": { "type": "string", "enum": ["maximize", "minimize"] },
+        "expression": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
     },
     "solver": {
       "type": "object",
-      "required": ["max_ticks"],
       "properties": {
-        "max_ticks": { "type": "integer", "minimum": 1 },
+        "solution_tolerance": { "type": "number", "minimum": 0 },
+        "default_relaxed_tolerance": { "type": "number", "minimum": 0 },
+        "max_repair_iterations": { "type": "integer", "minimum": 0 },
+        "max_candidate_evaluations": { "type": "integer", "minimum": 0 },
+        "top_k_moves": { "type": "integer", "minimum": 1 },
+        "max_index_delta_per_iteration": { "type": "integer", "minimum": 1 },
         "timeout_seconds": { "type": "number", "minimum": 0 }
       },
       "additionalProperties": false
+    },
+    "annotations": {
+      "type": "array",
+      "items": { "type": "object" }
     }
   },
   "additionalProperties": false,
@@ -62,7 +85,7 @@
     },
     "player_state": {
       "type": "object",
-      "required": ["position", "velocity", "yaw", "pitch", "on_ground"],
+      "required": ["position", "velocity"],
       "properties": {
         "position": { "$ref": "#/$defs/vec3" },
         "velocity": { "$ref": "#/$defs/vec3" },
@@ -72,38 +95,34 @@
       },
       "additionalProperties": false
     },
-    "keyboard_input": {
+    "exact_constraint": {
       "type": "object",
-      "required": ["tick", "forward", "strafe", "jump", "sneak", "sprint"],
+      "required": ["id", "type", "slot"],
       "properties": {
-        "tick": { "type": "integer", "minimum": 0 },
-        "forward": { "type": "integer", "minimum": -1, "maximum": 1 },
-        "strafe": { "type": "integer", "minimum": -1, "maximum": 1 },
-        "jump": { "type": "boolean" },
-        "sneak": { "type": "boolean" },
-        "sprint": { "type": "boolean" }
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["position_bounds"] },
+        "slot": { "type": "integer", "minimum": 0 },
+        "min_x": { "type": "number" },
+        "max_x": { "type": "number" },
+        "min_z": { "type": "number" },
+        "max_z": { "type": "number" },
+        "mathematica_tolerance": { "type": "number", "minimum": 0 },
+        "exact_tolerance": { "type": "number", "minimum": 0 },
+        "reason": { "type": "string" }
       },
       "additionalProperties": false
     },
-    "constraint": {
+    "inertia_event": {
       "type": "object",
-      "required": ["id", "type", "tick"],
+      "required": ["id", "type", "axis", "slot"],
       "properties": {
-        "id": { "type": "string" },
-        "type": { "type": "string" },
-        "tick": { "type": "integer", "minimum": 0 },
-        "parameters": { "type": "object" }
-      },
-      "additionalProperties": false
-    },
-    "objective": {
-      "type": "object",
-      "required": ["id", "type", "weight"],
-      "properties": {
-        "id": { "type": "string" },
-        "type": { "type": "string" },
-        "weight": { "type": "number" },
-        "parameters": { "type": "object" }
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["hit", "avoid"] },
+        "axis": { "type": "string", "enum": ["x", "z"] },
+        "direction": { "type": "string", "enum": ["positive", "negative"] },
+        "slot": { "type": "integer", "minimum": 1 },
+        "threshold": { "type": "number", "exclusiveMinimum": 0 },
+        "reason": { "type": "string" }
       },
       "additionalProperties": false
     }

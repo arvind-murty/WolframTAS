@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <string>
 #include <variant>
 
 namespace wolframtas {
@@ -106,6 +107,20 @@ void parse_movement_plan(const Json::Object& object, ExactInput& exact_input) {
                 slot.acceleration_input = input_mode->string();
             }
             slot.retention_medium = at(retention, "medium").string();
+            const Json* wall_hit = find_value(slot_object, "wall_hit");
+            if (wall_hit != nullptr) {
+                const Json::Object& wall_hit_object = wall_hit->object();
+                for (const Json& axis_value : at(wall_hit_object, "axes").array()) {
+                    const std::string axis = axis_value.string();
+                    if (axis == "x") {
+                        slot.wall_hit_x = true;
+                    } else if (axis == "z") {
+                        slot.wall_hit_z = true;
+                    } else {
+                        throw std::runtime_error("wall_hit axis must be x or z");
+                    }
+                }
+            }
         }
         const Json* slot_overrides = find_value(slot_object, "component_overrides");
         if (slot_overrides != nullptr) {
@@ -120,6 +135,43 @@ void parse_movement_plan(const Json::Object& object, ExactInput& exact_input) {
             }
         }
         exact_input.movement_slots.push_back(slot);
+    }
+}
+
+void parse_inertia_events(const Json::Object& object, ExactInput& exact_input) {
+    const Json* events_value = find_value(object, "inertia_events");
+    if (events_value == nullptr) {
+        const Json* derived_model_value = find_value(object, "derived_model");
+        if (derived_model_value != nullptr) {
+            events_value = find_value(derived_model_value->object(), "inertia_events");
+        }
+    }
+    if (events_value == nullptr) {
+        return;
+    }
+
+    for (const Json& item : events_value->array()) {
+        const Json::Object& event = item.object();
+        InertiaEvent parsed;
+        parsed.id = at(event, "id").string();
+        parsed.type = at(event, "type").string();
+        if (parsed.type != "hit" && parsed.type != "avoid") {
+            throw std::runtime_error("inertia_events.type must be hit or avoid");
+        }
+        parsed.axis = at(event, "axis").string();
+        if (parsed.axis != "x" && parsed.axis != "z") {
+            throw std::runtime_error("inertia_events.axis must be x or z");
+        }
+        parsed.slot = json_int(at(event, "slot"), "inertia_events.slot");
+        parsed.threshold = optional_number(event, "threshold", parsed.threshold);
+        const Json* direction = find_value(event, "direction");
+        if (direction != nullptr) {
+            parsed.direction = direction->string();
+        }
+        if (parsed.type == "avoid" && parsed.direction != "positive" && parsed.direction != "negative") {
+            throw std::runtime_error("inertia_events.direction must be positive or negative for avoid");
+        }
+        exact_input.inertia_events.push_back(parsed);
     }
 }
 
@@ -216,6 +268,7 @@ ExactInput parse_exact_input(const std::string& input) {
     exact_input.n = json_int(at(object, "n"), "n");
     exact_input.initial_state = parse_initial_state(object);
     parse_movement_plan(object, exact_input);
+    parse_inertia_events(object, exact_input);
     parse_constraints(object, exact_input);
     parse_exact_objective(object, exact_input);
     parse_solver_settings(object, exact_input);

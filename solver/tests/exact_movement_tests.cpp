@@ -94,5 +94,25 @@ int main() {
         assert_close(states.at(1).move_vz, 0.1);
         assert_close(states.at(1).vz, 0.091);
     }
+    {
+        wolframtas::ExactInput input;
+        input.n = 2;
+        input.movement_slots.push_back(movement_slot(1, "water", "water", "no45_forward", 0));
+        input.movement_slots.push_back(movement_slot(2, "lava", "lava", "forward_45", 1));
+        input.movement_slots.at(0).controls.jump = false;
+        input.movement_slots.at(0).wall_hit_x = true;
+        input.movement_slots.at(1).controls.jump = false;
+        input.movement_direction_radians.assign(2, 0.0);
+        wolframtas::derive_arrays_from_movement_plan(input);
+        wolframtas::validate_exact_input(input);
+        assert_close(input.imux.at(0), 0.0);
+        assert_close(input.imuz.at(0), 0.800000011920929);
+        assert_close(input.mmu.at(0), 0.019600000232458115);
+        assert_close(input.imux.at(1), 0.49999997019767761);
+        assert_close(input.imuz.at(1), 0.49999997019767761);
+        assert_close(input.mmu.at(1), 0.019999999552965164);
+        const std::vector<wolframtas::State> states = wolframtas::simulate(input, wolframtas::seed_yaw_indices(input));
+        assert_close(states.at(1).retained_vx, 0.0);
+    }
     return 0;
 }

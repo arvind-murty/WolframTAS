@@ -21,6 +21,16 @@ double state_axis_value(const State& state, const std::string& axis) {
     throw std::runtime_error("unsupported state axis: " + axis);
 }
 
+double retained_velocity_axis_value(const State& state, const std::string& axis) {
+    if (axis == "x") {
+        return state.retained_vx;
+    }
+    if (axis == "z") {
+        return state.retained_vz;
+    }
+    throw std::runtime_error("unsupported inertia axis: " + axis);
+}
+
 void add_bound_residual(Evaluation& evaluation, const std::string& id, double residual) {
     if (residual <= 0.0) {
         return;
@@ -65,6 +75,24 @@ Evaluation evaluate_candidate(const ExactInput& input, const std::vector<int>& y
                 evaluation,
                 constraint.id,
                 state.z - constraint.max_z - constraint.exact_tolerance);
+        }
+    }
+
+    for (const InertiaEvent& event : input.inertia_events) {
+        if (event.slot < 0 || event.slot >= static_cast<int>(evaluation.states.size())) {
+            throw std::runtime_error("inertia event slot is outside simulated state range: " + event.id);
+        }
+        const double velocity = retained_velocity_axis_value(
+            evaluation.states.at(static_cast<std::size_t>(event.slot)),
+            event.axis);
+        if (event.type == "hit") {
+            add_bound_residual(evaluation, event.id, std::abs(velocity) - event.threshold);
+        } else if (event.direction == "positive") {
+            add_bound_residual(evaluation, event.id, event.threshold - velocity);
+        } else if (event.direction == "negative") {
+            add_bound_residual(evaluation, event.id, event.threshold + velocity);
+        } else {
+            throw std::runtime_error("unsupported inertia event: " + event.id);
         }
     }
     evaluation.residual_norm = std::sqrt(evaluation.residual_norm);

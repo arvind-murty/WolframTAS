@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from wolframtas_orchestrator.cli import main
+from wolframtas_orchestrator.cli import exact_template_to_mathematica_problem, main
 
 
 def test_fixture_pipeline_writes_exact_solution(tmp_path: Path) -> None:
@@ -24,6 +24,9 @@ def test_fixture_pipeline_writes_exact_solution(tmp_path: Path) -> None:
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["status"] == "solved"
     assert payload["angles_discrete"][0]["yaw_index"] == 0
+    assert payload["macro_rows"][0]["w"] is True
+    assert payload["macro_rows"][0]["j"] is True
+    assert payload["diagnostics"]["mode"] == "fixture"
 
 
 def test_render_mathematica_writes_wolfram_script(tmp_path: Path) -> None:
@@ -115,6 +118,47 @@ def test_run_mathematica_invokes_wolframscript_and_writes_json(tmp_path: Path) -
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["status"] == "optimal"
     assert payload["diagnostics"]["script"].endswith("mathematica/optimize.wls")
+
+
+def test_exact_template_inertia_hit_adds_wolfram_event_and_zeroes_axis() -> None:
+    problem = exact_template_to_mathematica_problem(
+        {
+            "version": 1,
+            "name": "inertia-hit",
+            "slot_indexing": "1_based",
+            "n": 1,
+            "movement_plan": {
+                "version": 1,
+                "slot_indexing": "1_based",
+                "slots": [
+                    {
+                        "slot": 1,
+                        "kind": "movement",
+                        "controls": {"forward": 1, "strafe": 0, "jump": False, "sneak": False, "sprint": True},
+                        "acceleration": {"medium": "air"},
+                        "retention": {"medium": "air"},
+                    }
+                ],
+            },
+            "constraints": [],
+            "inertia_events": [{"id": "hit_x", "type": "hit", "axis": "x", "slot": 1}],
+            "exact_objective": {"type": "position", "axis": "z", "slot": 1},
+        },
+        constraint_tolerance=0.0,
+        fill_missing_tolerance=False,
+    )
+
+    assert problem["arrays"]["imux"] == [0.0]
+    assert problem["arrays"]["imuz"] == [0.9100000262260437]
+    assert problem["inertia_events"] == [
+        {
+            "id": "hit_x",
+            "type": "hit",
+            "axis": "x",
+            "slot": 1,
+            "retention_multiplier": 0.9100000262260437,
+        }
+    ]
 
 
 def test_run_mathematica_staged_rejects_large_objective_drift(tmp_path: Path) -> None:

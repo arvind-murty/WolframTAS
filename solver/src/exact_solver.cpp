@@ -42,7 +42,7 @@ RepairResult repair_angles(const ExactInput& input) {
     result.initial = evaluate_candidate(input, result.yaw_indices);
     result.final = result.initial;
 
-    if (input.constraints.empty() && !input.objective.enabled) {
+    if (input.constraints.empty() && input.inertia_events.empty() && !input.objective.enabled) {
         return result;
     }
     if (result.final.feasible) {

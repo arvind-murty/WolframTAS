@@ -5,6 +5,9 @@ WolframTAS is a Forge 1.8.9 Minecraft client mod for optimizing parkour routes.
 Use this file as persistent project context for Codex. Keep it short and update
 it whenever stable technical decisions change.
 
+For a compact handoff snapshot, read `docs/current-status.md`. For the next
+recommended implementation queue, read `docs/next-tasks.md`.
+
 ## Core Pipeline
 
 1. A low-level Mathematica input JSON describes `Imux`, `Imuz`, `Mmu`, constants,
@@ -12,9 +15,10 @@ it whenever stable technical decisions change.
 2. Python orchestrator can render that schema into an inspectable `.wls` script
    and can run the canonical Wolfram optimizer.
 3. Mathematica emits approximate movement-direction angles as JSON.
-4. Python will combine fixed keyboard inputs with Mathematica angles and pass
+4. Python combines fixed movement-plan inputs with Mathematica angles and passes
    them to the C++ exact solver.
-5. C++ will produce a macro CSV using an existing macro-tool CSV format.
+5. C++ produces exact solution JSON and can write macro CSV with
+   `--macro-csv-out`.
 
 The Forge mod is a later quality-of-life client for creating problem
 definitions, starting the orchestrator, and optionally rendering results. Do not
@@ -74,9 +78,14 @@ let mod concerns drive the core contracts.
   and `vz` to match anon-noob mothball `player.py` under NumPy 1.26 scalar
   promotion. Movement-plan inputs derive acceleration/retention through the
   same float32 movement-intermediate paths before simulation.
+- Exact solver v1 supports fixed water/lava acceleration and retention for
+  no-45/45 forward inputs, explicit `wall_hit.axes` retention cancellation, and
+  inertia hit/avoid residual checks against post-retention velocity before the
+  normal `0.005` threshold zeroing.
 - Macro CSV details are documented in `schemas/macro_csv.md`. The external
   format columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`; yaw and pitch are
-  relative degree deltas, not absolute angles.
+  relative degree deltas, not absolute angles. The C++ solver writes the CSV
+  with `--macro-csv-out`.
 - Python has a first staged exact handoff command:
   `python3 -m wolframtas_orchestrator solve-exact-input ...`. It derives
   Mathematica arrays from `movement_plan`, runs strict and relaxed Mathematica
@@ -132,7 +141,9 @@ let mod concerns drive the core contracts.
 
 ## Next Unfinished Work
 
-- Replace the fixture/no-op exact-solution path with real orchestrator handoff to the C++ solver.
+- Add focused exact-solver fixtures for water/lava, wall-hit, and inertia paths.
+- Reduce or remove the legacy fixture/no-op exact-solution path once the
+  mod-facing request flow uses staged solving directly.
 - Decide whether `mathematica/optimize.wls` should continue building directly from JSON or consume generated `.wls` from the orchestrator to avoid duplicated Wolfram model rendering logic.
 
 ## Learned Movement Rules

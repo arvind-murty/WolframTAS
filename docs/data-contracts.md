@@ -36,6 +36,26 @@ orchestrator derive these arrays:
 
 Slots are 1-based to match Mathematica indexing.
 
+## Optimization Request
+
+Produced by the future mod UI or route builder. Consumed by the Python
+orchestrator.
+
+Schema: `schemas/optimization_request.schema.json`
+
+Status: v1 input-first request contract.
+
+The request schema now mirrors the staged pipeline rather than the old generic
+`keyboard_inputs`/`objectives` shape:
+
+- `initial_state`: starting player state.
+- `movement_plan`: semantic movement slots.
+- `constraints`: typed exact constraints with per-constraint Mathematica and
+  exact tolerances.
+- `exact_objective`: objective axis/slot, optional expression override, and
+  solution tolerance.
+- `solver`: staged-solve and exact-repair settings.
+
 ## Movement Plan
 
 Produced by a user-authored file, future mod UI, or route builder. Consumed by
@@ -56,15 +76,24 @@ numbers:
   The exact solver decomposes init speed with `std::sin`/`std::cos`, not
   Minecraft `mcsin`/`mccos`, because init is an external speed vector.
 - `slots[*].controls`: fixed keyboard inputs for the slot.
-- `slots[*].acceleration.medium`: the movement acceleration context, currently
-  supporting the flat sprint-jump/no-45 cases used by fixtures.
+- `slots[*].acceleration.medium`: the movement acceleration context. Current
+  exact support covers `ground`, `air`, `water`, and `lava` for forward no-45
+  and forward-45 inputs.
 - `slots[*].retention.medium`: the post-move retention context. This is
   separate from acceleration so unusual fixed-tick cases can override drag
   provenance without changing the acceleration path.
+- `slots[*].wall_hit.axes`: explicit fixed-tick wall-hit annotation. For an X
+  wall, the generated/exact model zeros that slot's X retention while preserving
+  Z retention; Z walls do the opposite.
 
 The orchestrator derives Mathematica `arrays.imux`, `arrays.imuz`, and
 `arrays.mmu` directly from this plan. The exact solver independently derives
 the same physical values rather than trusting rounded JSON constants.
+For `inertia_events`, the orchestrator adds the Mathematica
+`retention_multiplier` from the generated arrays. Hit events zero the matching
+Mathematica `Imux`/`Imuz` entry; avoid events leave arrays unchanged. The exact
+solver evaluates inertia residuals against post-retention velocity before the
+normal `0.005` threshold zeroing.
 
 ## Mathematica Output
 
@@ -154,3 +183,6 @@ Status: external macro-tool format documented.
 The CSV columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`. `W/A/S/D` are movement
 keys, `P` is sprint, `N` is sneak, `J` is jump, `YAW` and `PITCH` are relative
 degree deltas, `L/R` are click fields, and `COUNT` is the row repeat count.
+
+The solver writes JSON to stdout and can also write the external CSV with
+`--macro-csv-out path/to/macro.csv`.

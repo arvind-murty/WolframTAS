@@ -32,6 +32,11 @@ def water_retention() -> float:
     return fl(fl(0.91) * water_slip)
 
 
+def lava_retention() -> float:
+    lava_slip = fl(fl(0.5) / fl(0.91))
+    return fl(fl(0.91) * lava_slip)
+
+
 def flat_sprint_jump_no45_mmu() -> float:
     movement = fl(0.1)
     movement = fl(float(movement) * (1.0 + float(fl(0.3))))
@@ -70,8 +75,9 @@ def derive_movement_model(movement_plan: dict[str, Any]) -> dict[str, Any]:
             continue
 
         retention = derive_retention(slot)
-        imux.append(retention)
-        imuz.append(retention)
+        wall_axes = set(slot.get("wall_hit", {}).get("axes", []))
+        imux.append(0.0 if "x" in wall_axes else retention)
+        imuz.append(0.0 if "z" in wall_axes else retention)
         mmu.append(derive_mmu(slot))
     return {"arrays": {"imux": imux, "imuz": imuz, "mmu": mmu}}
 
@@ -93,6 +99,8 @@ def derive_retention(slot: dict[str, Any]) -> float:
         return air_retention()
     if medium == "water":
         return water_retention()
+    if medium == "lava":
+        return lava_retention()
     if medium == "none":
         return 0.0
     raise ValueError(f"unsupported retention medium: {medium!r}")
@@ -129,6 +137,8 @@ def derive_mmu(slot: dict[str, Any]) -> float:
         if sprint:
             return air_sprint_45_mmu() if input_mode == "forward_45" else air_sprint_no45_mmu()
         return air_walk_45_mmu() if input_mode == "forward_45" else air_walk_no45_mmu()
+    if medium in {"water", "lava"}:
+        return fluid_45_mmu() if input_mode == "forward_45" else fluid_no45_mmu()
     raise ValueError(f"unsupported movement slot acceleration: medium={medium!r}, sprint={sprint}, jump={jump}")
 
 
@@ -146,4 +156,12 @@ def air_sprint_45_mmu() -> float:
 
 
 def air_walk_45_mmu() -> float:
+    return fl(0.02)
+
+
+def fluid_no45_mmu() -> float:
+    return no45_forward_acceleration(fl(0.02))
+
+
+def fluid_45_mmu() -> float:
     return fl(0.02)

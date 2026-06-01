@@ -26,6 +26,8 @@ struct MovementSlot {
     std::string acceleration_medium;
     std::string acceleration_input = "no45_forward";
     std::string retention_medium;
+    bool wall_hit_x = false;
+    bool wall_hit_z = false;
     double init_speed = 0.0;
     double init_imux = 0.0;
     double init_imuz = 0.0;
@@ -39,6 +41,17 @@ struct State {
     double vz = 0.0;
     double move_vx = 0.0;
     double move_vz = 0.0;
+    double retained_vx = 0.0;
+    double retained_vz = 0.0;
+};
+
+struct InertiaEvent {
+    std::string id;
+    std::string type;
+    std::string axis;
+    std::string direction;
+    int slot = 0;
+    double threshold = 0.005;
 };
 
 struct PositionConstraint {
@@ -80,6 +93,7 @@ struct ExactInput {
     std::vector<double> movement_direction_radians;
     std::vector<ComponentOverride> component_overrides;
     std::vector<MovementSlot> movement_slots;
+    std::vector<InertiaEvent> inertia_events;
     std::vector<PositionConstraint> constraints;
     ExactObjective objective;
     SolverSettings solver_settings;

@@ -11,6 +11,10 @@ from wolframtas_orchestrator.movement_model import (
     flat_ground_retention,
     flat_sprint_jump_no45_mmu,
     flat_walk_no45_mmu,
+    fluid_45_mmu,
+    fluid_no45_mmu,
+    lava_retention,
+    water_retention,
 )
 
 
@@ -23,6 +27,10 @@ def test_known_no45_values_match_reference_paths() -> None:
     assert air_walk_no45_mmu() == 0.019600000232458115
     assert air_walk_45_mmu() == 0.019999999552965164
     assert flat_walk_no45_mmu() == 0.09800000488758087
+    assert water_retention() == 0.800000011920929
+    assert lava_retention() == 0.4999999701976776
+    assert fluid_no45_mmu() == 0.019600000232458115
+    assert fluid_45_mmu() == 0.019999999552965164
 
 
 def test_derive_flat_sprintjump_arrays_from_movement_plan() -> None:
@@ -109,3 +117,33 @@ def test_derive_air_sprint_45_from_movement_plan() -> None:
     assert arrays["imux"] == [air_retention()]
     assert arrays["imuz"] == [air_retention()]
     assert arrays["mmu"] == [air_sprint_45_mmu()]
+
+
+def test_derive_fluid_and_wall_hit_from_movement_plan() -> None:
+    plan = {
+        "version": 1,
+        "slot_indexing": "1_based",
+        "slots": [
+            {
+                "slot": 1,
+                "kind": "movement",
+                "controls": {"forward": 1, "strafe": 0, "jump": False, "sneak": False, "sprint": True},
+                "acceleration": {"medium": "water", "input": "no45_forward"},
+                "retention": {"medium": "water"},
+                "wall_hit": {"axes": ["x"]},
+            },
+            {
+                "slot": 2,
+                "kind": "movement",
+                "controls": {"forward": 1, "strafe": 1, "jump": False, "sneak": False, "sprint": True},
+                "acceleration": {"medium": "lava", "input": "forward_45"},
+                "retention": {"medium": "lava"},
+            },
+        ],
+    }
+
+    arrays = derive_movement_arrays(plan)
+
+    assert arrays["imux"] == [0.0, lava_retention()]
+    assert arrays["imuz"] == [water_retention(), lava_retention()]
+    assert arrays["mmu"] == [fluid_no45_mmu(), fluid_45_mmu()]

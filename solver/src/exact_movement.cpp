@@ -62,8 +62,8 @@ float retention_multiplier(const std::string& medium) {
         return static_cast<float>(0.91F * water_slip);
     }
     if (medium == "lava") {
-        const float water_slip = static_cast<float>(0.5F / 0.91F);
-        return static_cast<float>(0.91F * water_slip);
+        const float lava_slip = static_cast<float>(0.5F / 0.91F);
+        return static_cast<float>(0.91F * lava_slip);
     }
     if (medium == "none") {
         return 0.0F;
@@ -80,9 +80,16 @@ SlotMovement derive_slot_movement(const MovementSlot& slot) {
         };
     }
 
-    const float retention = retention_multiplier(slot.retention_medium);
+    float retention_x = retention_multiplier(slot.retention_medium);
+    float retention_z = retention_x;
+    if (slot.wall_hit_x) {
+        retention_x = 0.0F;
+    }
+    if (slot.wall_hit_z) {
+        retention_z = 0.0F;
+    }
     if (slot.controls.forward == 0 && slot.controls.strafe == 0) {
-        return SlotMovement{static_cast<double>(retention), static_cast<double>(retention), 0.0};
+        return SlotMovement{static_cast<double>(retention_x), static_cast<double>(retention_z), 0.0};
     }
     float movement = 0.0F;
     if (slot.acceleration_medium == "ground") {
@@ -90,6 +97,7 @@ SlotMovement derive_slot_movement(const MovementSlot& slot) {
         if (slot.controls.sprint) {
             movement = static_cast<float>(static_cast<double>(movement) * (1.0 + static_cast<double>(0.3F)));
         }
+        const float retention = retention_multiplier(slot.retention_medium);
         movement = static_cast<float>(
             movement * static_cast<float>(0.16277136F / static_cast<float>(retention * retention * retention)));
     } else if (slot.acceleration_medium == "air") {
@@ -97,15 +105,17 @@ SlotMovement derive_slot_movement(const MovementSlot& slot) {
         if (slot.controls.sprint) {
             movement = static_cast<float>(static_cast<double>(movement) + static_cast<double>(movement) * 0.3);
         }
+    } else if (slot.acceleration_medium == "water" || slot.acceleration_medium == "lava") {
+        movement = 0.02F;
     } else {
         throw std::runtime_error("unsupported movement slot acceleration medium: " + slot.acceleration_medium);
     }
 
     double mmu = movement_acceleration(movement, slot);
-    if (slot.controls.jump && slot.controls.sprint) {
+    if (slot.acceleration_medium == "ground" && slot.controls.jump && slot.controls.sprint) {
         mmu += static_cast<double>(0.2F);
     }
-    return SlotMovement{static_cast<double>(retention), static_cast<double>(retention), mmu};
+    return SlotMovement{static_cast<double>(retention_x), static_cast<double>(retention_z), mmu};
 }
 
 float mcsin_index(int index) {
@@ -220,6 +230,8 @@ std::vector<State> simulate(const ExactInput& input, const std::vector<int>& yaw
         state.z += state.vz;
         state.vx *= imux;
         state.vz *= imuz;
+        state.retained_vx = state.vx;
+        state.retained_vz = state.vz;
 
         if (std::abs(state.vx) < inertia_threshold) {
             state.vx = 0.0;
