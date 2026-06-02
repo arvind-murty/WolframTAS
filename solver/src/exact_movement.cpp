@@ -324,8 +324,8 @@ std::vector<State> simulate(const ExactInput& input, const std::vector<int>& yaw
         // Minecraft applies cobweb slowdown and ladder clamping to the motion
         // before the move (Entity.moveEntity), i.e. after acceleration.
         if (web) {
-            state.vx /= 4.0;
-            state.vz /= 4.0;
+            state.vx *= movement_constants::WEB_MOTION_FACTOR;
+            state.vz *= movement_constants::WEB_MOTION_FACTOR;
         }
         if (ladder) {
             state.vx = std::min(std::max(state.vx, -ladder_clamp), ladder_clamp);

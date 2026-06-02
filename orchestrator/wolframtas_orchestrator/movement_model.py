@@ -83,7 +83,46 @@ def derive_movement_model(movement_plan: dict[str, Any]) -> dict[str, Any]:
 
         prev_sprint = _effective_sprint(slots[index - 1]) if index > 0 else False
         mmu.append(_derive_mmu(slot, table, boost, prev_sprint))
+
+    _apply_web_approximation(table, slots, imux, imuz, mmu)
     return {"arrays": {"imux": imux, "imuz": imuz, "mmu": mmu}}
+
+
+def _apply_web_approximation(
+    table: dict[str, Any],
+    slots: list[dict[str, Any]],
+    imux: list[float],
+    imuz: list[float],
+    mmu: list[float],
+) -> None:
+    """Fold cobweb into the closed-form arrays the Mathematica model optimizes.
+
+    The base closed-form has no web operator; the C++ exact solver models the real
+    physics (the move velocity is cut by ``web_motion_factor`` on a web tick, and
+    the carried velocity is dropped at the start of the next tick). That is exactly
+    reproduced by editing the derived imu/mmu — same shared ``web_motion_factor``
+    constant the solver uses, no component overrides:
+      - web tick:          mmu *= factor (cut the new contribution)
+                           imu  = 0       (the carried velocity is dropped after it)
+      - tick before a web: imu *= factor  (cut the momentum carried into the web)
+    Derivation: move velocity A_n = C_n + Mmu_n; web makes M_n = factor * A_n and
+    zeroes the carry out. Scaling Mmu_n and the prior tick's retention (which scales
+    the carried-in C_n) gives M_n = factor*(C_n + Mmu_n); imu=0 on the web tick
+    zeroes R_n, matching the next-tick carry drop. The prior-tick edit is the one
+    part that cannot be a per-slot constant: it touches a different tick than the
+    web tick, because the recurrence has no web operator. Consecutive webs stay
+    consistent (0 * factor = 0).
+    """
+    factor = float(table["web_motion_factor"])
+    for index, slot in enumerate(slots):
+        if slot.get("kind", "movement") == "init" or not slot.get("web"):
+            continue
+        mmu[index] *= factor
+        imux[index] = 0.0
+        imuz[index] = 0.0
+        if index > 0:
+            imux[index - 1] *= factor
+            imuz[index - 1] *= factor
 
 
 def derive_simulation_arrays(movement_plan: dict[str, Any]) -> dict[str, list[float]]:

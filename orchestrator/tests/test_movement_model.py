@@ -104,6 +104,43 @@ def test_air_sprint_is_delayed_one_tick() -> None:
     ]
 
 
+def test_web_approximation_edits_imu_and_mmu() -> None:
+    table = _table()
+    air = KNOWN_RETENTION["air"]
+    plan = {
+        "version": 1,
+        "slot_indexing": "1_based",
+        "slots": [
+            # Normal air tick feeding the web tick: its retention is quartered
+            # (it scales the momentum carried into the web).
+            {
+                "slot": 1,
+                "kind": "movement",
+                "controls": _movement_slot(),
+                "acceleration": {"medium": "air"},
+                "retention": {"medium": "air"},
+            },
+            # Web tick: mmu quartered, retention zeroed (carry dropped after it).
+            {
+                "slot": 2,
+                "kind": "movement",
+                "controls": _movement_slot(),
+                "acceleration": {"medium": "air"},
+                "retention": {"medium": "air"},
+                "web": True,
+            },
+        ],
+    }
+
+    arrays = derive_movement_arrays(plan)
+
+    factor = table["web_motion_factor"]
+    base_air_walk = table["base_movement"]["air_walk"] * table["input_factor"]["no45"]
+    assert arrays["imux"] == [air * factor, 0.0]
+    assert arrays["imuz"] == [air * factor, 0.0]
+    assert arrays["mmu"] == [base_air_walk, base_air_walk * factor]
+
+
 def test_derive_init_slot_as_first_mmu_entry() -> None:
     plan = {
         "version": 1,

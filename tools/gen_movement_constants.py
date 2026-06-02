@@ -99,6 +99,10 @@ def build() -> dict:
         "base_movement": base_movement,
         "input_factor": factors,
         "sprintjump_boost": float(f32(0.2)),
+        # Cobweb cuts the move velocity to 1/4 on a web tick. Used by the C++
+        # solver (real per-tick cut) and the orchestrator's Mathematica web
+        # approximation. Exact in float32/float64, so no rounding concern.
+        "web_motion_factor": 0.25,
     }
 
 
@@ -126,6 +130,7 @@ def emit_hpp(table: dict, path: Path) -> None:
     lines += named("FACTOR_", table["input_factor"])
     lines.append("")
     lines.append(f"constexpr double SPRINTJUMP_BOOST = {table['sprintjump_boost']!r};")
+    lines.append(f"constexpr double WEB_MOTION_FACTOR = {table['web_motion_factor']!r};")
     lines.append("")
     lines.append("}  // namespace wolframtas::movement_constants")
     lines.append("")

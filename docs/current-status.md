@@ -54,6 +54,24 @@ Locked exact outputs:
 - Flat sprint jump no-45 final `z = 2.6234314852435587`.
 - Flat sprint jump 45 final `z = 2.645539114938402`.
 
+## Full-flow command coverage (command -> Wolfram -> exact -> macro)
+
+`solve-command` runs a mothball command through the staged optimizer and exact
+solver. These mechanics run to `status: solved` with the exact result matching
+mothball bit-for-bit: walk, sprint, walk-jump, sprint-jump, sneak, sneaksprint,
+45-strafe, air, water, lava, slime/ice (`setslip`), cobweb, and ladder when the
+0.15 clamp does not engage.
+
+- Cobweb is modeled in the Mathematica stage by editing the derived imu/mmu
+  (web tick: `mmu *= web_motion_factor`, `imu = 0`; tick before a web:
+  `imu *= web_motion_factor`), using the same shared `web_motion_factor` constant
+  the C++ solver uses for the real per-tick cut.
+- Ladder is intentionally treated as plain air in the Mathematica stage; the
+  0.15 clamp lives only in the C++ exact solver. So a ladder command where the
+  clamp actually engages (e.g. a sprint-jump onto a ladder) trips the staged
+  objective-drift guard and reports `failed`, even though the exact simulation is
+  correct. This is a known, accepted optimizer-model approximation gap.
+
 Movement/medium mechanics (walk, sprint, jumps, 45, sneak, sneaksprint, air,
 water, lava, slime, ice, ladder, web, sprint delay) are validated by **parsing
 mothball command strings and comparing the C++ solver to the mothball simulator**

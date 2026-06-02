@@ -26,5 +26,6 @@
     "no45_sneak": 0.2940000295639038,
     "forward_45_sneak": 0.41577884554862976
   },
-  "sprintjump_boost": 0.20000000298023224
+  "sprintjump_boost": 0.20000000298023224,
+  "web_motion_factor": 0.25
 }

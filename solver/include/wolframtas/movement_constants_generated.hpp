@@ -30,5 +30,6 @@ constexpr double FACTOR_NO45_SNEAK = 0.2940000295639038;
 constexpr double FACTOR_FORWARD_45_SNEAK = 0.41577884554862976;
 
 constexpr double SPRINTJUMP_BOOST = 0.20000000298023224;
+constexpr double WEB_MOTION_FACTOR = 0.25;
 
 }  // namespace wolframtas::movement_constants
