@@ -137,10 +137,10 @@ let mod concerns drive the core contracts.
   `PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator run-mathematica examples/simple_jump/inertia_mathematica_input.json --approx-out /tmp/wolframtas_inertia_approx.json`
 - Run the canonical Wolfram optimizer directly:
   `wolframscript -file mathematica/optimize.wls examples/simple_jump/inertia_mathematica_input.json`
-- Run orchestrator tests:
-  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator python3 -B -m pytest orchestrator/tests`
+- Run orchestrator tests (use `.venv-oracle`; see docs/current-status.md Toolchain):
+  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator .venv-oracle/bin/python -B -m pytest orchestrator/tests`
 - Run no-mock end-to-end tests with real Wolfram and the built C++ solver:
-  `python3 -B -m pytest e2e`
+  `PYTHONPATH=orchestrator .venv-oracle/bin/python -m pytest e2e`
 
 ## Current Fixtures
 
@@ -183,7 +183,11 @@ let mod concerns drive the core contracts.
 - Air no-45 walking acceleration: `0.02 * 0.98 = 0.0196`.
 - Air no-45 sprint acceleration: `0.02 * 1.3 * 0.98 = 0.02548`.
 - Water/lava have 45/no-45 input behavior, but no normal sustained sprinting.
-- Water, lava, sneaking, and hitting a wall remove sprint.
+- Water/lava/sneak/wall do NOT remove the sprint ATTRIBUTE in the solver (it just
+  reads `controls.sprint`); water/lava take the no-boost acceleration branch, and
+  the PLAN BUILDER drops `controls.sprint` where a wall/sneak should (see the
+  keyboard-vs-attribute note below). In real gameplay these stop sprinting, but
+  the solver models that via the per-tick attribute, not by stripping it.
 - Exact-solver movement-plan slots separate acceleration context from retention
   context so fixed-tick edge cases can override drag provenance without
   changing the acceleration path.
@@ -236,6 +240,16 @@ let mod concerns drive the core contracts.
 - For one-tick X wall hit at `m1 = 5` during a flat sprint jump no 45 from
   chained `init`, a typical no-45 `Mmu` pattern is
   `Join[{init, 0.3274}, ConstantArray[0.02548, 4], {0.0196}, ConstantArray[0.02548, 6]]`.
+- The exact solver also has a direct threshold-collision model separate from the
+  `wall_hit.axes` retention trick: a slot's `wall_collision {axis, value}` makes
+  `simulate()` clamp the axis position to `value` and zero that axis's velocity
+  when the move crosses it. The command parser exposes it as `s[hitx=val](1)` /
+  `s[hitz=val](1)`. Because mothball has no collision, the parser validates it by
+  setting mothball's post-collision state directly (`setpos`/`setvel`) plus one
+  catch-up `stop`; bit-exact for 1D (straight into the wall). 2D mixed-axis and
+  wall sprint removal are not yet wired (see docs/next-tasks.md).
+- `stop`/`stopair` (mothball aliases `st`/`sta`) are inputless coast ticks and
+  flow through the parser unchanged.
 - Landing block overlap constraints use player-center overlap. For a block
   spanning `[b, b+1]`, the overlap range for the player center is
   `[b - 0.3, b + 1.3]`. When an objective pushes toward one side, the opposite

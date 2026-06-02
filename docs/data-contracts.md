@@ -84,7 +84,15 @@ numbers:
   provenance without changing the acceleration path.
 - `slots[*].wall_hit.axes`: explicit fixed-tick wall-hit annotation. For an X
   wall, the generated/exact model zeros that slot's X retention while preserving
-  Z retention; Z walls do the opposite.
+  Z retention; Z walls do the opposite. No position clamp (the optimizer
+  re-anchors coordinates).
+- `slots[*].wall_collision` `{axis, value}`: threshold collision used by the
+  exact solver. After the slot's move, if the axis crosses `value`, the solver
+  clamps the position to `value` and zeroes that axis's velocity (real Minecraft
+  moveEntity clamping). The command parser produces this from the
+  `s[hitx=val]`/`s[hitz=val]` modifier; see docs/current-status.md.
+- `slots[*].web` / `slots[*].ladder`: cobweb (¼ motion + prev-web carry zero) and
+  ladder (±0.15 clamp) flags.
 
 The orchestrator derives Mathematica `arrays.imux`, `arrays.imuz`, and
 `arrays.mmu` directly from this plan. The exact solver independently derives
@@ -144,11 +152,14 @@ Movement-state timing rules that the contracts must be able to represent:
 
 - Chained incoming momentum can be represented as an `init` contribution before
   the first newly simulated tick.
-- Sprint activation/removal is immediate on ground and delayed by one tick in
-  air.
-- Water, lava, sneaking, and wall hits remove sprint.
-- Delayed air sprint applies only if the receiving tick is not water, lava,
-  sneaking, or a wall-hit tick.
+- Sprint is an ATTRIBUTE carried per slot in `controls.sprint`. Its boost is
+  applied immediately on ground and delayed by one tick in air (the previous
+  slot's value), matching mothball's `prev_sprint`. The solver does NOT strip
+  sprint for sneak/water/lava/wall — water/lava simply take the no-boost
+  acceleration branch, and the PLAN BUILDER (command parser or optimizer) sets
+  the attribute per tick (e.g. drops it at a wall tick so exactly one no-sprint
+  air slot follows). Sneaking removes the sprint keyboard input but not an
+  already-true attribute; the one-tick air delay yields the sneaksprint window.
 - Water/lava movement still has 45/no-45 input behavior, even though normal
   sustained sprinting does not apply there.
 - Momentum threshold is applied independently for X and Z after slipperiness.

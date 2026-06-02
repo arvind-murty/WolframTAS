@@ -17,17 +17,33 @@ The intended pipeline is:
 
 ## Repo Layout
 
-- `mod/`: Forge 1.8.9 client mod.
-- `orchestrator/`: Python process orchestration between Minecraft,
-  Mathematica, and the exact solver.
-- `mathematica/`: Wolfram scripts and examples.
+- `mod/`: Forge 1.8.9 client mod (later quality-of-life layer; not the priority).
+- `orchestrator/`: Python process orchestration between Minecraft, Mathematica,
+  and the exact solver. Also hosts the mothball command parser and the vendored
+  mothball engine (`orchestrator/vendor/`).
+- `mathematica/`: Wolfram scripts and examples (`optimize.wls` is canonical).
 - `solver/`: C++ exact movement solver.
+- `tools/`: `gen_movement_constants.py` — generates the shared imu/mmu constants
+  table consumed by both the orchestrator and the solver.
 - `schemas/`: Versioned JSON contracts shared across components.
 - `examples/`: Small end-to-end fixtures.
-- `docs/`: Architecture, workflows, and project decisions.
+- `docs/`: Architecture, workflows, decisions, current status, and next tasks.
 
 ## Current Status
 
-This repository is in the scaffold stage. The contracts and component entry
-points are intentionally small so each layer can be tested independently before
-the full Minecraft/Mathematica/C++ integration is wired together.
+The core pipeline works end-to-end: a mothball command (e.g. `sj45(12)`) or a
+movement plan flows through the Wolfram optimizer and the C++ exact solver to an
+exact solution and a macro CSV. The exact solver is validated **bit-exact against
+the mothball reference simulator** across ~46 commands; movement constants have a
+single generated source of truth. The Forge mod is still scaffolding.
+
+## Start Here (new contributors and agents)
+
+- **Decisions / stable rules:** `AGENTS.md` (the source of truth; Codex reads
+  this, and `CLAUDE.md` imports it for Claude).
+- **Handoff snapshot, toolchain setup, and how to run everything:**
+  `docs/current-status.md` — read the "Toolchain" section first; tests run under
+  a dedicated `.venv-oracle` (numpy 1.26 + pytest) because the vendored mothball
+  oracle requires it.
+- **What to work on next:** `docs/next-tasks.md`.
+- **Contracts:** `docs/data-contracts.md` + `schemas/`.

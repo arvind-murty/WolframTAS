@@ -186,18 +186,22 @@ solver/build/wolframtas_solver --macro-csv-out /tmp/wolframtas_macro.csv \
 
 ## Tests
 
+Use the `.venv-oracle` virtualenv for all Python (numpy 1.26 + pytest); plain
+`python3` here lacks pytest and has the wrong numpy. See the "Toolchain" section
+of `docs/current-status.md` for the one-time setup.
+
 Run unit/component tests without real Wolfram:
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator python3 -B -m pytest orchestrator/tests
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator .venv-oracle/bin/python -B -m pytest orchestrator/tests
 ctest --test-dir solver/build --output-on-failure
 ```
 
 Run no-mock end-to-end tests separately. These call the real `wolframscript`
-and the built C++ solver:
+and the built C++ solver, and import the vendored numpy-1.26 mothball oracle:
 
 ```sh
-python3 -B -m pytest e2e
+PYTHONPATH=orchestrator .venv-oracle/bin/python -m pytest e2e
 ```
 
 ## Forge Mod

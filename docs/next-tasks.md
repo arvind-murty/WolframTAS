@@ -2,6 +2,26 @@
 
 This is the recommended implementation queue for the next agent/session.
 
+## Current open work (top of queue, as of the latest commits)
+
+Recently completed (see git log + docs/current-status.md): single-source movement
+constants table (`tools/gen_movement_constants.py`), cobweb modeled in the
+full-flow Mathematica stage, the test suite rewritten to compare bit-exact vs
+mothball with NO hardcoded numbers, `stop`/`stopair` parity, and the
+`s[hitx=val]`/`s[hitz=val]` wall-collision modifier.
+
+Open, roughly in order:
+
+1. Wall collision follow-ups: (a) wire sprint removal into the `wall_collision`
+   tick (drop the attribute for the next slot, ground/air aware); (b) handle 2D
+   mixed-axis walls (the single catch-up stop leaves a 1-ULP perpendicular
+   artifact — only 1D "straight into the wall" is validated today).
+2. The rest of this file (schema validation, legacy fixture path, Wolfram
+   rendering ownership, mod-facing pipeline) is still open and unchanged.
+3. Push the local commits (`git push`) — several commits are ahead of origin.
+
+The detailed historical checklist follows.
+
 ## 0. Command parsing (DONE)
 
 The mothball command parser is integrated: the engine is vendored at
@@ -75,7 +95,8 @@ Likely next mechanics:
   fixtures `sprint_turn_on_air_*`, `wall_sprint_cancel_*`). Fixtures now specify
   the held sprint key; the solver derives effective sprint and the air delay.
 - [x] sneak movement scaling (no-45 and 45): sneak scales forward/strafe by 0.3
-  before the 0.98 factor (immediate in 1.8.9) and removes sprint. Fixtures
+  before the 0.98 factor (immediate in 1.8.9) and removes the sprint keyboard
+  input (NOT the sprint attribute — see the correction note below). Fixtures
   `sneak_walk_*`, `sneak_45_*`, validated bit-exact vs mothball.
 - [x] Replaced the scalar 45 shortcut with mothball's real forward/strafe 2D
   decomposition. `movement_directions[].radians` stays the travel/resultant
@@ -90,9 +111,11 @@ After every movement edit, re-run the mothball command-parity test
 (`e2e/test_command_parser.py`) — it is the source of truth and must stay
 bit-exact on x/z/vx/vz. Do not reintroduce hardcoded expected movement values.
 
-NOTE: the sprint NOT-yet-done item from section 1 (auto sprint-cancel on wall) is
-now handled — a `wall_hit` slot has effective sprint false, dropping the next air
-tick's boost. Sneak both removes sprint and scales the forward input.
+NOTE (correction): the solver does NOT auto-cancel sprint on a wall. Sprint is an
+attribute the PLAN BUILDER sets per slot (`slot_effective_sprint` just reads
+`controls.sprint`); the command parser/optimizer drops it at a wall tick, and the
+air one-tick delay then yields exactly one no-sprint air slot. Sneak scales the
+forward/strafe input by 0.3 but does NOT zero the sprint attribute.
 
 ## 3. Improve Schema Validation
 
