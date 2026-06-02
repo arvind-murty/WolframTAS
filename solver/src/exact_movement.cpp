@@ -333,10 +333,38 @@ std::vector<State> simulate(const ExactInput& input, const std::vector<int>& yaw
         }
         state.move_vx = state.vx;
         state.move_vz = state.vz;
+        const double x_before = state.x;
+        const double z_before = state.z;
         state.x += state.vx;
         state.z += state.vz;
+        // Wall threshold collision: if this slot's move crosses the wall
+        // coordinate on an axis, clamp the position to the wall and zero that
+        // axis's velocity (overriding retention). Mirrors Minecraft moveEntity
+        // clamping the blocked component.
+        bool wall_x_clamped = false;
+        bool wall_z_clamped = false;
+        if (movement_slot != nullptr && movement_slot->has_wall_x) {
+            const double w = movement_slot->wall_x_value;
+            if ((x_before < w && state.x >= w) || (x_before > w && state.x <= w)) {
+                state.x = w;
+                wall_x_clamped = true;
+            }
+        }
+        if (movement_slot != nullptr && movement_slot->has_wall_z) {
+            const double w = movement_slot->wall_z_value;
+            if ((z_before < w && state.z >= w) || (z_before > w && state.z <= w)) {
+                state.z = w;
+                wall_z_clamped = true;
+            }
+        }
         state.vx *= imux;
         state.vz *= imuz;
+        if (wall_x_clamped) {
+            state.vx = 0.0;
+        }
+        if (wall_z_clamped) {
+            state.vz = 0.0;
+        }
         state.retained_vx = state.vx;
         state.retained_vz = state.vz;
 

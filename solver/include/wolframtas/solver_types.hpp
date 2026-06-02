@@ -28,6 +28,13 @@ struct MovementSlot {
     std::string retention_medium;
     bool wall_hit_x = false;
     bool wall_hit_z = false;
+    // Wall threshold collision: after this slot's move, if the axis crosses the
+    // wall coordinate, clamp the position to it and zero that axis's velocity
+    // (and sprint is dropped from the next slot by the plan builder).
+    bool has_wall_x = false;
+    double wall_x_value = 0.0;
+    bool has_wall_z = false;
+    double wall_z_value = 0.0;
     bool web = false;
     bool ladder = false;
     double init_speed = 0.0;

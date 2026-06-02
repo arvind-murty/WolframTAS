@@ -30,6 +30,28 @@ def _ground_retention_medium(slip: float) -> str:
     raise ValueError(f"unsupported ground slipperiness: {slip}")
 
 
+def _parse_wall_modifier(modifier: str) -> tuple[str, float] | None:
+    """Parse a WolframTAS wall-collision modifier ``hitx=<v>`` / ``hitz=<v>``
+    (e.g. ``s[hitz=5.0](1)``) into ``(axis, value)``, or None if not one."""
+    for name, axis in (("hitx", "x"), ("hitz", "z")):
+        if modifier.startswith(name + "="):
+            return axis, float(modifier[len(name) + 1:])
+    return None
+
+
+def _split_wall_modifier(mods: list[str]) -> tuple[tuple[str, float] | None, list[str]]:
+    """Separate a wall modifier from the mothball modifiers in a command's mods."""
+    wall: tuple[str, float] | None = None
+    clean: list[str] = []
+    for modifier in mods:
+        parsed = _parse_wall_modifier(modifier)
+        if parsed is not None:
+            wall = parsed
+        else:
+            clean.append(modifier)
+    return wall, clean
+
+
 def _slot_from_move_args(slot_index: int, args: dict, facing_deg: float, slip: float) -> dict:
     forward = int(round(float(args.get("forward", 0))))
     strafe = int(round(float(args.get("strafe", 0))))
@@ -91,7 +113,7 @@ def parse_command(command: str) -> dict[str, Any]:
     Returns a dict with keys ``exact_input`` (the solver input) and
     ``mothball_final`` (x, z, vx, vz from mothball's player).
     """
-    slots, directions, mothball_final = _simulate_command(command)
+    slots, directions, mothball_final, has_wall = _simulate_command(command)
     n = len(slots)
     exact_input = {
         "version": 1,
@@ -107,7 +129,10 @@ def parse_command(command: str) -> dict[str, Any]:
             "movement_directions": directions,
         },
     }
-    return {"exact_input": exact_input, "mothball_final": mothball_final}
+    # has_wall signals the comparison harness that mothball's reference used a
+    # catch-up stop (so its final state aligns with the solver's actual last
+    # state states[n], retained velocity), not the usual one-behind states[n-1].
+    return {"exact_input": exact_input, "mothball_final": mothball_final, "wall_hit": has_wall}
 
 
 def command_to_exact_template(command: str, objective_axis: str = "z", sense: str = "maximize") -> dict[str, Any]:
@@ -117,7 +142,7 @@ def command_to_exact_template(command: str, objective_axis: str = "z", sense: st
     to optimize (no fixed optimal_solution). The objective defaults to maximizing
     the final position along the given axis (z = travel-distance).
     """
-    slots, _directions, _mothball_final = _simulate_command(command)
+    slots, _directions, _mothball_final, _has_wall = _simulate_command(command)
     n = len(slots)
     return {
         "version": 1,
@@ -142,18 +167,33 @@ def _initial_state() -> dict[str, Any]:
     }
 
 
-def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, float]]:
+def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, float], bool]:
     """Run the vendored mothball engine on a command, returning the movement_plan
     slots (with a leading zero-speed init slot for bookkeeping), the per-tick
-    movement directions mothball used, and mothball's final (x, z, vx, vz).
+    movement directions, mothball's final (x, z, vx, vz), and whether the command
+    contained a wall-collision modifier.
 
     Inputless "stop" ticks are just mothball's ``stop`` / ``stopair`` commands
-    (aliases ``st`` / ``sta``); they need no special handling here."""
+    (aliases ``st`` / ``sta``); they need no special handling here.
+
+    Wall-collision modifiers ``hitx=<v>`` / ``hitz=<v>`` mark a tick that crosses
+    a wall on an axis: the solver clamps the position to the wall, zeroes that
+    axis's velocity, and drops sprint. mothball has no collision, so we exploit
+    the fact that the post-collision state is exactly (pos=v, axis-velocity=0)
+    regardless of the hit tick's movement: we hand mothball that state directly
+    via setpos/setvel instead of simulating the hit, and append ONE catch-up stop
+    so mothball's move-then-accelerate order settles the post-wall acceleration
+    into position (matching the solver's accelerate-then-move). See parse_command
+    for the resulting comparison alignment."""
     from cogs.movement.player import Player
     from cogs.movement.context import Context
     from cogs.movement import parsers
 
+    tuples = parsers.string_to_args(command)
+    has_wall = any(_split_wall_modifier(mods)[0] is not None for _, mods, _ in tuples)
+
     captured: list[tuple[dict, float, float]] = []
+    tick_wall: dict[int, tuple[str, float]] = {}
     original_move = Player.move
 
     def spy(self, ctx):  # type: ignore[no-untyped-def]
@@ -166,11 +206,23 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
         captured.append((dict(ctx.args), facing, slip))
         return result
 
+    # Pass A: run the command (wall modifiers stripped) to capture per-tick
+    # params for the solver slots and mark which ticks carry a wall collision.
     player = Player()
     Player.move = spy
+    last_airborne = False
     try:
         ctx = Context(player, [{}], False, "xz")
-        parsers.execute_string(ctx, command)
+        for cmd, mods, args in tuples:
+            wall, clean = _split_wall_modifier(mods)
+            start = len(captured)
+            parsers.execute_command(ctx, cmd, clean, args)
+            if wall is not None:
+                if len(captured) - start != 1:
+                    raise ValueError("hitx=/hitz= requires a single-tick command")
+                tick_wall[start] = wall
+            if captured:
+                last_airborne = bool(captured[-1][0].get("airborne", False))
     finally:
         Player.move = original_move
 
@@ -181,14 +233,41 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
     for index, (args, facing_deg, slip) in enumerate(captured):
         slot_index = index + 2
         slot = _slot_from_move_args(slot_index, args, facing_deg, slip)
+        if index in tick_wall:
+            axis, value = tick_wall[index]
+            slot["wall_collision"] = {"axis": axis, "value": value}
         md = slot.pop("_movement_direction")
         slots.append(slot)
         directions.append({"slot": slot_index, "radians": md, "degrees": math.degrees(md)})
 
+    if not has_wall:
+        mothball_final = {
+            "x": float(player.x),
+            "z": float(player.z),
+            "vx": float(player.vx),
+            "vz": float(player.vz),
+        }
+        return slots, directions, mothball_final, False
+
+    # Pass B: mothball reference. Replace each hit tick with a direct set of the
+    # post-collision state (the clamp result), run everything else normally, then
+    # append one catch-up stop so the deferred post-wall acceleration settles.
+    ref = Player()
+    ref_ctx = Context(ref, [{}], False, "xz")
+    for cmd, mods, args in tuples:
+        wall, clean = _split_wall_modifier(mods)
+        if wall is not None:
+            axis, value = wall
+            pos_cmd, vel_cmd = ("setposx", "setvx") if axis == "x" else ("setposz", "setvz")
+            parsers.execute_command(ref_ctx, pos_cmd, [], [repr(value)])
+            parsers.execute_command(ref_ctx, vel_cmd, [], ["0"])
+        else:
+            parsers.execute_command(ref_ctx, cmd, clean, args)
+    parsers.execute_command(ref_ctx, "sta" if last_airborne else "st", [], ["1"])
     mothball_final = {
-        "x": float(ctx.player.x),
-        "z": float(ctx.player.z),
-        "vx": float(ctx.player.vx),
-        "vz": float(ctx.player.vz),
+        "x": float(ref.x),
+        "z": float(ref.z),
+        "vx": float(ref.vx),
+        "vz": float(ref.vz),
     }
-    return slots, directions, mothball_final
+    return slots, directions, mothball_final, True

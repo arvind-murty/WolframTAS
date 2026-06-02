@@ -129,6 +129,22 @@ void parse_movement_plan(const Json::Object& object, ExactInput& exact_input) {
                     }
                 }
             }
+            // Wall threshold collision: {"axis": "x"|"z", "value": <coord>}.
+            const Json* wall_collision = find_value(slot_object, "wall_collision");
+            if (wall_collision != nullptr) {
+                const Json::Object& wall_object = wall_collision->object();
+                const std::string axis = at(wall_object, "axis").string();
+                const double value = at(wall_object, "value").number();
+                if (axis == "x") {
+                    slot.has_wall_x = true;
+                    slot.wall_x_value = value;
+                } else if (axis == "z") {
+                    slot.has_wall_z = true;
+                    slot.wall_z_value = value;
+                } else {
+                    throw std::runtime_error("wall_collision axis must be x or z");
+                }
+            }
         }
         const Json* slot_overrides = find_value(slot_object, "component_overrides");
         if (slot_overrides != nullptr) {

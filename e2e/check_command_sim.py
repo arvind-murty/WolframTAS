@@ -50,6 +50,12 @@ DEFAULT_COMMANDS = [
     # stop / stopair: mothball's inputless ticks (st / sta), e.g. between moves
     "walk(5) stop(2) walk(5)", "sprint(5) stopair(1) sprint(5)",
     "sj(6) stopair(1) sj(4)", "s45(4) stop(1) s45(4)",
+    # wall collision: hitz=<v> clamps z to the wall on the crossing tick, zeroes
+    # vz, validated vs mothball via setposz/setvz + catch-up stop (1D, movement
+    # straight into the wall). The threshold must be crossed BY the hit tick.
+    "s[hitz=0.05](1) s(1)", "s(2) s[hitz=0.45](1) s(2)",
+    "s(1) s[hitz=0.2](1) s(3)", "walk[hitz=0.04](1) walk(2)",
+    "sj(1) s[hitz=0.5](1) s(2)",
 ]
 
 
@@ -65,16 +71,27 @@ def check_one(command: str) -> str | None:
     if completed.returncode != 0:
         return f"solver failed: {completed.stderr.strip()}"
     states = json.loads(completed.stdout)["states_exact"]
-    # mothball reports position one tick before the final velocity; with the
-    # leading init slot, position aligns at states[n-1] and velocity at states[n].
-    # Compare BOTH axes (z = travel, x = perpendicular drift) and both velocity
-    # components, all bit-exact against mothball — no hardcoded expected values.
-    checks = (
-        ("position x", float(states[n - 1]["position"]["x"]), mothball["x"]),
-        ("position z", float(states[n - 1]["position"]["z"]), mothball["z"]),
-        ("velocity vx", float(states[n]["velocity"]["x"]), mothball["vx"]),
-        ("velocity vz", float(states[n]["velocity"]["z"]), mothball["vz"]),
-    )
+    if parsed.get("wall_hit"):
+        # Wall commands: mothball's reference used a catch-up stop, so its final
+        # state aligns with the solver's actual last state states[n] (position and
+        # retained/post-drag velocity), not the usual one-behind states[n-1].
+        checks = (
+            ("position x", float(states[n]["position"]["x"]), mothball["x"]),
+            ("position z", float(states[n]["position"]["z"]), mothball["z"]),
+            ("velocity vx", float(states[n]["retained_velocity"]["x"]), mothball["vx"]),
+            ("velocity vz", float(states[n]["retained_velocity"]["z"]), mothball["vz"]),
+        )
+    else:
+        # mothball reports position one tick before the final velocity; with the
+        # leading init slot, position aligns at states[n-1] and velocity at
+        # states[n]. Compare BOTH axes (z = travel, x = perpendicular drift) and
+        # both velocity components, all bit-exact — no hardcoded expected values.
+        checks = (
+            ("position x", float(states[n - 1]["position"]["x"]), mothball["x"]),
+            ("position z", float(states[n - 1]["position"]["z"]), mothball["z"]),
+            ("velocity vx", float(states[n]["velocity"]["x"]), mothball["vx"]),
+            ("velocity vz", float(states[n]["velocity"]["z"]), mothball["vz"]),
+        )
     for label, solver_value, mothball_value in checks:
         if solver_value != mothball_value:
             return f"{label}: solver {solver_value!r} vs mothball {mothball_value!r}"

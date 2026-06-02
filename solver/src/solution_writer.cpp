@@ -105,6 +105,8 @@ void write_states_exact(std::ostream& output, const std::vector<State>& states) 
                << "\", \"y\": \"0\", \"z\": \"" << number_string(state.z)
                << "\" }, \"velocity\": { \"x\": \"" << number_string(state.move_vx)
                << "\", \"y\": \"0\", \"z\": \"" << number_string(state.move_vz)
+               << "\" }, \"retained_velocity\": { \"x\": \"" << number_string(state.retained_vx)
+               << "\", \"z\": \"" << number_string(state.retained_vz)
                << "\" }, \"on_ground\": false }";
         output << (index + 1 == states.size() ? "\n" : ",\n");
     }
