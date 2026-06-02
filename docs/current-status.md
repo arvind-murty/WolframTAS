@@ -83,16 +83,32 @@ needs numpy 1.26 + `evalidate`, so that test shells out to `.venv-oracle`.
 Alignment: with the leading init slot (n = 1 + moves), mothball's final position
 == `states_exact[n-1].z`, final velocity == `states_exact[n].vz`.
 
-## Cross-model consistency
+## Cross-model consistency (single source of truth)
 
-The Python orchestrator (Mathematica stage) and the C++ exact solver each derive
-`imux`/`imuz`/`mmu` from `movement_plan`. They had drifted: `slime` and `ice`
-retention existed only on the C++ side, so a slime/ice plan threw in the
-orchestrator. Reconciled `movement_model.py` to support all media the solver
-does. The solver now echoes its derived arrays in a `derived_model` block, and
-`e2e/test_movement_model_consistency.py` runs a shared plan (one no-input slot
-per retention medium) through both derivations and asserts they match, guarding
-against future drift.
+The imu (retention) and mmu (base movement magnitude) constants are now derived
+in exactly ONE place: `tools/gen_movement_constants.py` computes them in numpy
+float32 (mothball reference semantics, same op order the solver uses) and emits
+two committed artifacts:
+
+- `orchestrator/wolframtas_orchestrator/movement_constants.json` (orchestrator/Wolfram)
+- `solver/include/wolframtas/movement_constants_generated.hpp` (C++ solver, `constexpr`)
+
+Regenerate after any physics-constant change:
+`./.venv-oracle/bin/python tools/gen_movement_constants.py` (needs numpy 1.26).
+
+The C++ solver reads retention + base movement from the generated header (and
+does the forward/strafe 2D decomposition + sprint-jump 0.2 boost in `simulate()`).
+`movement_model.py` no longer derives physics: it reads the JSON and assembles
+the per-tick arrays the Mathematica stage uses (it folds base * input_factor +
+boost into a single magnitude, since the Wolfram model wants speed-along-facing
+directly). This removed the earlier buggy duplicate derivation — e.g.
+`flat_walk` ignored the block medium, and the air-sprint one-tick delay and sneak
+input factors were missing on the orchestrator side; all now match the solver.
+
+`e2e/test_movement_model_consistency.py` guards the table two ways: the committed
+JSON/HPP must match a fresh run of the generator (no stale artifacts), and the
+JSON the orchestrator reads must equal what the compiled solver derives at
+runtime (echoed in its `derived_model` block).
 
 ## Sprint state
 

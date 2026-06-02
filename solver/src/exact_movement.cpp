@@ -1,6 +1,7 @@
 #include "wolframtas/exact_movement.hpp"
 
 #include "wolframtas/angle_table.hpp"
+#include "wolframtas/movement_constants_generated.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -18,33 +19,69 @@ struct SlotMovement {
     double mmu = 0.0;
 };
 
+// Retention (imu) per medium. The values are the SINGLE source of truth in
+// movement_constants_generated.hpp (tools/gen_movement_constants.py, numpy
+// float32); the orchestrator reads the same numbers from the JSON twin.
 float retention_multiplier(const std::string& medium) {
+    namespace mc = movement_constants;
     if (medium == "flat_ground") {
-        return static_cast<float>(0.91F * 0.6F);
+        return static_cast<float>(mc::RETENTION_FLAT_GROUND);
     }
     if (medium == "air") {
-        return static_cast<float>(0.91F * 1.0F);
+        return static_cast<float>(mc::RETENTION_AIR);
     }
     if (medium == "slime") {
-        return static_cast<float>(0.91F * 0.8F);
+        return static_cast<float>(mc::RETENTION_SLIME);
     }
     if (medium == "ice") {
-        return static_cast<float>(0.91F * 0.98F);
+        return static_cast<float>(mc::RETENTION_ICE);
     }
     if (medium == "water") {
-        // mothball computes fl(0.8/0.91): the ratio in float64, then rounds to float32.
-        const float water_slip = static_cast<float>(0.8 / 0.91);
-        return static_cast<float>(0.91F * water_slip);
+        return static_cast<float>(mc::RETENTION_WATER);
     }
     if (medium == "lava") {
-        // mothball computes fl(0.5/0.91): the ratio in float64, then rounds to float32.
-        const float lava_slip = static_cast<float>(0.5 / 0.91);
-        return static_cast<float>(0.91F * lava_slip);
+        return static_cast<float>(mc::RETENTION_LAVA);
     }
     if (medium == "none") {
-        return 0.0F;
+        return static_cast<float>(mc::RETENTION_NONE);
     }
     throw std::runtime_error("unsupported retention medium: " + medium);
+}
+
+// Base movement magnitude M (mmu) per acceleration medium / sprint / ground
+// surface, also from the generated table. simulate() does the forward/strafe 2D
+// decomposition and sprint-jump 0.2 boost on top of this base.
+float base_movement_magnitude(
+    const std::string& acceleration_medium,
+    const std::string& retention_medium,
+    bool ground_sprint,
+    bool air_prev_sprint) {
+    namespace mc = movement_constants;
+    if (acceleration_medium == "ground") {
+        if (retention_medium == "flat_ground") {
+            return static_cast<float>(ground_sprint ? mc::BASE_GROUND_FLAT_GROUND_SPRINT
+                                                     : mc::BASE_GROUND_FLAT_GROUND_WALK);
+        }
+        if (retention_medium == "slime") {
+            return static_cast<float>(ground_sprint ? mc::BASE_GROUND_SLIME_SPRINT
+                                                     : mc::BASE_GROUND_SLIME_WALK);
+        }
+        if (retention_medium == "ice") {
+            return static_cast<float>(ground_sprint ? mc::BASE_GROUND_ICE_SPRINT
+                                                     : mc::BASE_GROUND_ICE_WALK);
+        }
+        throw std::runtime_error("unsupported ground retention medium: " + retention_medium);
+    }
+    if (acceleration_medium == "air") {
+        return static_cast<float>(air_prev_sprint ? mc::BASE_AIR_SPRINT : mc::BASE_AIR_WALK);
+    }
+    if (acceleration_medium == "water") {
+        return static_cast<float>(mc::BASE_WATER);
+    }
+    if (acceleration_medium == "lava") {
+        return static_cast<float>(mc::BASE_LAVA);
+    }
+    throw std::runtime_error("unsupported movement slot acceleration medium: " + acceleration_medium);
 }
 
 // Effective ("actually sprinting") state for a slot: the sprint input as given.
@@ -84,25 +121,8 @@ SlotMovement derive_slot_movement(const MovementSlot& slot, bool ground_sprint, 
     if (slot.controls.forward == 0 && slot.controls.strafe == 0) {
         return SlotMovement{static_cast<double>(retention_x), static_cast<double>(retention_z), 0.0};
     }
-    float movement = 0.0F;
-    if (slot.acceleration_medium == "ground") {
-        movement = 0.1F;
-        if (ground_sprint) {
-            movement = static_cast<float>(static_cast<double>(movement) * (1.0 + static_cast<double>(0.3F)));
-        }
-        const float retention = retention_multiplier(slot.retention_medium);
-        movement = static_cast<float>(
-            movement * static_cast<float>(0.16277136F / static_cast<float>(retention * retention * retention)));
-    } else if (slot.acceleration_medium == "air") {
-        movement = 0.02F;
-        if (air_prev_sprint) {
-            movement = static_cast<float>(static_cast<double>(movement) + static_cast<double>(movement) * 0.3);
-        }
-    } else if (slot.acceleration_medium == "water" || slot.acceleration_medium == "lava") {
-        movement = 0.02F;
-    } else {
-        throw std::runtime_error("unsupported movement slot acceleration medium: " + slot.acceleration_medium);
-    }
+    const float movement = base_movement_magnitude(
+        slot.acceleration_medium, slot.retention_medium, ground_sprint, air_prev_sprint);
 
     // mmu carries the base movement magnitude M. simulate() does the forward/
     // strafe 2D decomposition and the separate sprint-jump 0.2 boost, mimicking

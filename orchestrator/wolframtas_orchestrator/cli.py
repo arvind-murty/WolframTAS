@@ -24,6 +24,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_mathematica_staged_command(argv[1:])
     if argv and argv[0] == "solve-exact-input":
         return solve_exact_input_command(argv[1:])
+    if argv and argv[0] == "solve-command":
+        return solve_command_command(argv[1:])
 
     parser = argparse.ArgumentParser(description="Run the WolframTAS optimization pipeline.")
     parser.add_argument("request", type=Path, help="Optimization request JSON from the mod.")
@@ -136,6 +138,58 @@ def run_mathematica_staged_command(argv: list[str]) -> int:
     return 0
 
 
+def run_staged_exact_flow(
+    exact_template: dict[str, Any],
+    *,
+    wolframscript: str,
+    optimizer_script: Path,
+    solver_command: list[str],
+    default_relaxed_tolerance: float,
+    solution_tolerance: float,
+    macro_csv_out: Path | None = None,
+) -> dict[str, Any]:
+    """Run the staged Mathematica (strict + relaxed) optimize then the C++ exact
+    solver for an exact-solver template. Returns the strict/relaxed Mathematica
+    solutions, the generated exact-solver input, and the exact solution. If
+    macro_csv_out is given, the solver also writes the macro CSV there."""
+    strict_problem = exact_template_to_mathematica_problem(
+        exact_template, constraint_tolerance=0.0, fill_missing_tolerance=False
+    )
+    relaxed_problem = exact_template_to_mathematica_problem(
+        exact_template, constraint_tolerance=default_relaxed_tolerance, fill_missing_tolerance=True
+    )
+
+    with tempfile.TemporaryDirectory(prefix="wolframtas-solve-") as directory:
+        strict_input = Path(directory) / "strict.json"
+        relaxed_input = Path(directory) / "relaxed.json"
+        strict_input.write_text(json.dumps(materialize_mathematica_problem(strict_problem)), encoding="utf-8")
+        relaxed_input.write_text(json.dumps(materialize_mathematica_problem(relaxed_problem)), encoding="utf-8")
+        strict_solution = run_wolfram_file(wolframscript, optimizer_script, strict_input)
+        relaxed_solution = run_wolfram_file(wolframscript, optimizer_script, relaxed_input)
+
+    assert_solution_close(strict_solution, relaxed_solution, solution_tolerance)
+    strict_solution.setdefault("diagnostics", {})["stage"] = "strict"
+    relaxed_solution.setdefault("diagnostics", {})["stage"] = "relaxed"
+    relaxed_solution["diagnostics"]["strict_objective_value"] = float(strict_solution["objective_value"])
+    relaxed_solution["diagnostics"]["objective_deviation"] = abs(
+        float(relaxed_solution["objective_value"]) - float(strict_solution["objective_value"])
+    )
+
+    exact_input = build_exact_solver_input(exact_template, relaxed_solution, solution_tolerance)
+    full_solver_command = list(solver_command)
+    if macro_csv_out is not None:
+        macro_csv_out.parent.mkdir(parents=True, exist_ok=True)
+        full_solver_command += ["--macro-csv-out", str(macro_csv_out)]
+    exact_solution = run_json_filter(full_solver_command, exact_input)
+
+    return {
+        "strict_solution": strict_solution,
+        "relaxed_solution": relaxed_solution,
+        "exact_input": exact_input,
+        "exact_solution": exact_solution,
+    }
+
+
 def solve_exact_input_command(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Run staged Mathematica and the exact solver for an exact-input template.")
     parser.add_argument("input", type=Path, help="Exact solver input template with movement_plan and constraints.")
@@ -155,45 +209,66 @@ def solve_exact_input_command(argv: list[str]) -> int:
     parser.add_argument("--solution-tolerance", type=float, default=0.001)
     args = parser.parse_args(argv)
 
-    exact_template = read_json(args.input)
-    strict_problem = exact_template_to_mathematica_problem(
-        exact_template,
-        constraint_tolerance=0.0,
-        fill_missing_tolerance=False,
-    )
-    relaxed_problem = exact_template_to_mathematica_problem(
-        exact_template,
-        constraint_tolerance=args.default_relaxed_tolerance,
-        fill_missing_tolerance=True,
+    result = run_staged_exact_flow(
+        read_json(args.input),
+        wolframscript=args.wolframscript,
+        optimizer_script=args.optimizer_script,
+        solver_command=args.solver_command,
+        default_relaxed_tolerance=args.default_relaxed_tolerance,
+        solution_tolerance=args.solution_tolerance,
     )
 
-    with tempfile.TemporaryDirectory(prefix="wolframtas-solve-") as directory:
-        strict_input = Path(directory) / "strict.json"
-        relaxed_input = Path(directory) / "relaxed.json"
-        strict_input.write_text(json.dumps(materialize_mathematica_problem(strict_problem)), encoding="utf-8")
-        relaxed_input.write_text(json.dumps(materialize_mathematica_problem(relaxed_problem)), encoding="utf-8")
-        strict_solution = run_wolfram_file(args.wolframscript, args.optimizer_script, strict_input)
-        relaxed_solution = run_wolfram_file(args.wolframscript, args.optimizer_script, relaxed_input)
-
-    assert_solution_close(strict_solution, relaxed_solution, args.solution_tolerance)
-    strict_solution.setdefault("diagnostics", {})["stage"] = "strict"
-    relaxed_solution.setdefault("diagnostics", {})["stage"] = "relaxed"
-    relaxed_solution["diagnostics"]["strict_objective_value"] = float(strict_solution["objective_value"])
-    relaxed_solution["diagnostics"]["objective_deviation"] = abs(
-        float(relaxed_solution["objective_value"]) - float(strict_solution["objective_value"])
-    )
-
-    exact_input = build_exact_solver_input(exact_template, relaxed_solution, args.solution_tolerance)
-    exact_solution = run_json_filter(args.solver_command, exact_input)
-
-    for output_path, payload in (
-        (args.strict_out, strict_solution),
-        (args.relaxed_out, relaxed_solution),
-        (args.exact_input_out, exact_input),
-        (args.exact_out, exact_solution),
+    for output_path, key in (
+        (args.strict_out, "strict_solution"),
+        (args.relaxed_out, "relaxed_solution"),
+        (args.exact_input_out, "exact_input"),
+        (args.exact_out, "exact_solution"),
     ):
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        output_path.write_text(json.dumps(result[key], indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def solve_command_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        description="Optimize a mothball command end-to-end: parse -> Mathematica optimize -> exact solver -> macro CSV."
+    )
+    parser.add_argument("command", help="Mothball command string, e.g. 'sj45(12)'.")
+    parser.add_argument("--macro-out", type=Path, required=True, help="Path for the macro CSV.")
+    parser.add_argument("--solver-command", nargs="+", required=True, help="Exact solver command that reads JSON on stdin.")
+    parser.add_argument("--objective-axis", default="z", choices=["x", "z"], help="Axis to optimize (default z = travel distance).")
+    parser.add_argument("--sense", default="maximize", choices=["maximize", "minimize"])
+    parser.add_argument("--exact-out", type=Path, help="Optional path for the exact solution JSON.")
+    parser.add_argument("--exact-input-out", type=Path, help="Optional path for the generated exact solver input JSON.")
+    parser.add_argument("--wolframscript", default="wolframscript", help="wolframscript executable path.")
+    parser.add_argument(
+        "--optimizer-script",
+        type=Path,
+        default=Path("mathematica/optimize.wls"),
+        help="Wolfram optimizer script to run with wolframscript -file.",
+    )
+    parser.add_argument("--default-relaxed-tolerance", type=float, default=0.0001)
+    parser.add_argument("--solution-tolerance", type=float, default=0.001)
+    args = parser.parse_args(argv)
+
+    from .command_parser import command_to_exact_template
+
+    exact_template = command_to_exact_template(args.command, objective_axis=args.objective_axis, sense=args.sense)
+    result = run_staged_exact_flow(
+        exact_template,
+        wolframscript=args.wolframscript,
+        optimizer_script=args.optimizer_script,
+        solver_command=args.solver_command,
+        default_relaxed_tolerance=args.default_relaxed_tolerance,
+        solution_tolerance=args.solution_tolerance,
+        macro_csv_out=args.macro_out,
+    )
+    if args.exact_input_out is not None:
+        args.exact_input_out.parent.mkdir(parents=True, exist_ok=True)
+        args.exact_input_out.write_text(json.dumps(result["exact_input"], indent=2) + "\n", encoding="utf-8")
+    if args.exact_out is not None:
+        args.exact_out.parent.mkdir(parents=True, exist_ok=True)
+        args.exact_out.write_text(json.dumps(result["exact_solution"], indent=2) + "\n", encoding="utf-8")
     return 0
 
 

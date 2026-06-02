@@ -67,6 +67,13 @@ let mod concerns drive the core contracts.
 - The C++ solver consumes exact-solver input JSON on stdin, derives supported
   forward-only movement values from `movement_plan`, and simulates from the
   selected movement direction.
+- The imu (retention) and mmu (base movement) constants have a SINGLE source of
+  truth: `tools/gen_movement_constants.py` computes them in numpy float32 and
+  emits `orchestrator/wolframtas_orchestrator/movement_constants.json` (read by
+  the orchestrator) and `solver/include/wolframtas/movement_constants_generated.hpp`
+  (a `constexpr` table compiled into the solver). Both committed artifacts are
+  generated; regenerate with the tool (numpy 1.26) after any constant change and
+  rebuild the solver. Do not re-derive these constants inline in either component.
 - Exact solver angle handling: keep Mathematica movement directions in radians
   internally and flip sign to get Minecraft yaw radians. Apply Minecraft-style
   float32 angle indexing for `mcsin`/`mccos`

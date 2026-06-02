@@ -1,52 +1,68 @@
-"""Cross-model consistency: the Python orchestrator derivation (for the
-Mathematica stage) and the C++ exact solver must derive the same movement arrays
-from a shared movement_plan. This guards against the two independent
-implementations drifting (e.g. a retention medium supported on one side only, or
-a 1-ULP value difference).
+"""Guard the shared movement-constants table.
 
-Uses no-input slots so mmu is 0 on both sides and the comparison isolates
-retention (imux/imuz) across every supported medium. Needs the built solver; no
-Wolfram required.
+The imu/mmu physics now lives in ONE place: tools/gen_movement_constants.py emits
+both movement_constants.json (orchestrator/Wolfram) and
+movement_constants_generated.hpp (C++ solver). These tests make sure the two
+committed artifacts are not stale w.r.t. the generator, and that the numbers the
+orchestrator reads from the JSON match the numbers the solver actually compiled
+in and derives at runtime (catches a hand-edited JSON or a stale solver build).
+
+Needs numpy 1.26 (the generator) and the built solver; no Wolfram required.
 """
 from __future__ import annotations
 
+import importlib.util
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOLVER = REPO_ROOT / "solver/build/wolframtas_solver"
+JSON_PATH = REPO_ROOT / "orchestrator/wolframtas_orchestrator/movement_constants.json"
+HPP_PATH = REPO_ROOT / "solver/include/wolframtas/movement_constants_generated.hpp"
+GEN_PATH = REPO_ROOT / "tools/gen_movement_constants.py"
 RETENTION_MEDIA = ["flat_ground", "air", "slime", "ice", "water", "lava", "none"]
 
 
-def build_plan() -> dict:
-    slots = []
-    for index, medium in enumerate(RETENTION_MEDIA, start=1):
-        slots.append(
-            {
-                "slot": index,
-                "kind": "movement",
-                "controls": {"forward": 0, "strafe": 0, "jump": False, "sneak": False, "sprint": False},
-                "acceleration": {"medium": "air", "input": "no45_forward"},
-                "retention": {"medium": medium},
-            }
+def _load_generator():
+    spec = importlib.util.spec_from_file_location("gen_movement_constants", GEN_PATH)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_committed_artifacts_match_generator() -> None:
+    gen = _load_generator()
+    table = gen.build()
+
+    committed_json = json.loads(JSON_PATH.read_text(encoding="utf-8"))
+    assert committed_json == table, "movement_constants.json is stale; re-run tools/gen_movement_constants.py"
+
+    expected_hpp = HPP_PATH.read_text(encoding="utf-8")
+    tmp = HPP_PATH.with_suffix(".hpp.regen")
+    try:
+        gen.emit_hpp(table, tmp)
+        assert tmp.read_text(encoding="utf-8") == expected_hpp, (
+            "movement_constants_generated.hpp is stale; re-run tools/gen_movement_constants.py"
         )
-    return {"version": 1, "slot_indexing": "1_based", "slots": slots}
+    finally:
+        if tmp.exists():
+            tmp.unlink()
 
 
-def python_arrays(plan: dict) -> dict:
-    sys.path.insert(0, str(REPO_ROOT / "orchestrator"))
-    from wolframtas_orchestrator.movement_model import derive_movement_model
-
-    return derive_movement_model(plan)["arrays"]
-
-
-def cpp_arrays(plan: dict) -> dict:
-    n = len(plan["slots"])
+def _cpp_retention() -> dict[str, float]:
+    n = len(RETENTION_MEDIA)
+    slots = [
+        {
+            "slot": i,
+            "kind": "movement",
+            "controls": {"forward": 0, "strafe": 0, "jump": False, "sneak": False, "sprint": False},
+            "acceleration": {"medium": "air", "input": "no45_forward"},
+            "retention": {"medium": medium},
+        }
+        for i, medium in enumerate(RETENTION_MEDIA, start=1)
+    ]
     request = {
         "version": 1,
         "n": n,
@@ -58,7 +74,7 @@ def cpp_arrays(plan: dict) -> dict:
             "pitch": 0.0,
             "on_ground": False,
         },
-        "movement_plan": plan,
+        "movement_plan": {"version": 1, "slot_indexing": "1_based", "slots": slots},
         "optimal_solution": {
             "status": "optimal",
             "objective_value": 0.0,
@@ -68,16 +84,15 @@ def cpp_arrays(plan: dict) -> dict:
     completed = subprocess.run(
         [str(SOLVER)], input=json.dumps(request), text=True, capture_output=True, check=True
     )
-    return json.loads(completed.stdout)["derived_model"]
+    derived = json.loads(completed.stdout)["derived_model"]
+    return {medium: derived["imux"][i] for i, medium in enumerate(RETENTION_MEDIA)}
 
 
-def test_python_and_cpp_derive_identical_arrays() -> None:
+def test_orchestrator_json_matches_compiled_solver() -> None:
     assert SOLVER.exists(), "build solver first with: cmake --build solver/build"
-    plan = build_plan()
-    py = python_arrays(plan)
-    cpp = cpp_arrays(plan)
-    # Per-medium so a failure names the offending medium.
-    for index, medium in enumerate(RETENTION_MEDIA):
-        assert py["imux"][index] == cpp["imux"][index], f"imux drift for {medium}"
-        assert py["imuz"][index] == cpp["imuz"][index], f"imuz drift for {medium}"
-        assert py["mmu"][index] == cpp["mmu"][index], f"mmu drift for {medium}"
+    sys.path.insert(0, str(REPO_ROOT / "orchestrator"))
+    from wolframtas_orchestrator.movement_model import retention_for
+
+    cpp = _cpp_retention()
+    for medium in RETENTION_MEDIA:
+        assert retention_for(medium) == cpp[medium], f"retention drift for {medium} (rebuild solver?)"

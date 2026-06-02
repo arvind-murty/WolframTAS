@@ -91,21 +91,74 @@ def parse_command(command: str) -> dict[str, Any]:
     Returns a dict with keys ``exact_input`` (the solver input) and
     ``mothball_final`` (x, z, vx, vz from mothball's player).
     """
+    slots, directions, mothball_final = _simulate_command(command)
+    n = len(slots)
+    exact_input = {
+        "version": 1,
+        "name": f"command:{command}",
+        "slot_indexing": "1_based",
+        "n": n,
+        "angle_domain": {"table_size": 65536},
+        "initial_state": _initial_state(),
+        "movement_plan": {"version": 1, "slot_indexing": "1_based", "slots": slots},
+        "optimal_solution": {
+            "status": "optimal",
+            "objective_value": 0.0,
+            "movement_directions": directions,
+        },
+    }
+    return {"exact_input": exact_input, "mothball_final": mothball_final}
+
+
+def command_to_exact_template(command: str, objective_axis: str = "z", sense: str = "maximize") -> dict[str, Any]:
+    """Parse a mothball command into a WolframTAS exact-solver *template* for the
+    staged optimization flow: the movement_plan skeleton (per-tick keys/mediums)
+    plus an objective, with the per-tick facing/angles left FREE for Mathematica
+    to optimize (no fixed optimal_solution). The objective defaults to maximizing
+    the final position along the given axis (z = travel-distance).
+    """
+    slots, _directions, _mothball_final = _simulate_command(command)
+    n = len(slots)
+    return {
+        "version": 1,
+        "name": f"command:{command}",
+        "slot_indexing": "1_based",
+        "n": n,
+        "angle_domain": {"table_size": 65536},
+        "initial_state": _initial_state(),
+        "movement_plan": {"version": 1, "slot_indexing": "1_based", "slots": slots},
+        "exact_objective": {"type": "position", "axis": objective_axis, "slot": n, "sense": sense},
+        "constraints": [],
+    }
+
+
+def _initial_state() -> dict[str, Any]:
+    return {
+        "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "velocity": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "yaw": 0.0,
+        "pitch": 0.0,
+        "on_ground": True,
+    }
+
+
+def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, float]]:
+    """Run the vendored mothball engine on a command, returning the movement_plan
+    slots (with a leading zero-speed init slot for bookkeeping), the per-tick
+    movement directions mothball used, and mothball's final (x, z, vx, vz)."""
     from cogs.movement.player import Player
     from cogs.movement.context import Context
     from cogs.movement import parsers
 
-    captured: list[tuple[dict, float]] = []
+    captured: list[tuple[dict, float, float]] = []
     original_move = Player.move
 
     def spy(self, ctx):  # type: ignore[no-untyped-def]
         result = original_move(self, ctx)
-        # Effective facing (MC yaw) for the tick: last_rotation already folds in
-        # the rotation arg / default_rotation / rotation_offset; add the 45-command
-        # function_offset on top (mothball player.py applies it after last_rotation).
+        # Effective facing (MC yaw): last_rotation folds in the rotation arg /
+        # default_rotation / rotation_offset; add the 45-command function_offset.
         facing = float(self.last_rotation) + float(ctx.args.get("function_offset", 0.0))
-        # The slip the tick actually used (player.prev_slip is set to it at the end
-        # of move()), so setslip / per-tick slip overrides are picked up.
+        # The slip the tick actually used (so setslip overrides are picked up).
         slip = float(self.prev_slip)
         captured.append((dict(ctx.args), facing, slip))
         return result
@@ -119,7 +172,7 @@ def parse_command(command: str) -> dict[str, Any]:
         Player.move = original_move
 
     # A leading zero-speed init slot absorbs mothball's one-tick position/velocity
-    # bookkeeping offset, so states_exact[n] equals mothball's final position.
+    # bookkeeping offset, so states_exact[n-1] equals mothball's final position.
     slots: list[dict] = [{"slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91}]
     directions = [{"slot": 1, "radians": 0.0, "degrees": 0.0}]
     for index, (args, facing_deg, slip) in enumerate(captured):
@@ -129,33 +182,10 @@ def parse_command(command: str) -> dict[str, Any]:
         slots.append(slot)
         directions.append({"slot": slot_index, "radians": md, "degrees": math.degrees(md)})
 
-    n = len(slots)
-    exact_input = {
-        "version": 1,
-        "name": f"command:{command}",
-        "slot_indexing": "1_based",
-        "n": n,
-        "angle_domain": {"table_size": 65536},
-        "initial_state": {
-            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-            "velocity": {"x": 0.0, "y": 0.0, "z": 0.0},
-            "yaw": 0.0,
-            "pitch": 0.0,
-            "on_ground": True,
-        },
-        "movement_plan": {"version": 1, "slot_indexing": "1_based", "slots": slots},
-        "optimal_solution": {
-            "status": "optimal",
-            "objective_value": 0.0,
-            "movement_directions": directions,
-        },
+    mothball_final = {
+        "x": float(ctx.player.x),
+        "z": float(ctx.player.z),
+        "vx": float(ctx.player.vx),
+        "vz": float(ctx.player.vz),
     }
-    return {
-        "exact_input": exact_input,
-        "mothball_final": {
-            "x": float(ctx.player.x),
-            "z": float(ctx.player.z),
-            "vx": float(ctx.player.vx),
-            "vz": float(ctx.player.vz),
-        },
-    }
+    return slots, directions, mothball_final
