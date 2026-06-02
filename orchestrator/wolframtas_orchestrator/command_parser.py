@@ -145,7 +145,10 @@ def _initial_state() -> dict[str, Any]:
 def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, float]]:
     """Run the vendored mothball engine on a command, returning the movement_plan
     slots (with a leading zero-speed init slot for bookkeeping), the per-tick
-    movement directions mothball used, and mothball's final (x, z, vx, vz)."""
+    movement directions mothball used, and mothball's final (x, z, vx, vz).
+
+    Inputless "stop" ticks are just mothball's ``stop`` / ``stopair`` commands
+    (aliases ``st`` / ``sta``); they need no special handling here."""
     from cogs.movement.player import Player
     from cogs.movement.context import Context
     from cogs.movement import parsers

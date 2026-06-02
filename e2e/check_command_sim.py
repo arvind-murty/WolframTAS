@@ -47,6 +47,9 @@ DEFAULT_COMMANDS = [
     "sprint(8, 45)", "walk(10, 30)", "sj45(10, 12.7)", "w45(6, 90)", "sns45(7, 22.5)",
     # multi-command sequences
     "sj s45(11)", "wj(5) walk(5)", "sprint(3) walk(3) sprint(3)",
+    # stop / stopair: mothball's inputless ticks (st / sta), e.g. between moves
+    "walk(5) stop(2) walk(5)", "sprint(5) stopair(1) sprint(5)",
+    "sj(6) stopair(1) sj(4)", "s45(4) stop(1) s45(4)",
 ]
 
 
