@@ -86,7 +86,9 @@ Likely next mechanics:
   z unchanged. No orchestrator resultant->facing conversion needed.
 - [ ] richer wall-hit fixtures, still fixed-tick first
 
-Preserve the locked sprint-jump outputs after every movement edit.
+After every movement edit, re-run the mothball command-parity test
+(`e2e/test_command_parser.py`) — it is the source of truth and must stay
+bit-exact on x/z/vx/vz. Do not reintroduce hardcoded expected movement values.
 
 NOTE: the sprint NOT-yet-done item from section 1 (auto sprint-cancel on wall) is
 now handled — a `wall_hit` slot has effective sprint false, dropping the next air

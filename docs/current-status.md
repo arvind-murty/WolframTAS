@@ -49,10 +49,14 @@ The exact solver currently supports fixed-tick horizontal movement cases:
   before threshold zeroing.
 - Local discrete repair in 65536 Minecraft angle-index space.
 
-Locked exact outputs:
-
-- Flat sprint jump no-45 final `z = 2.6234314852435587`.
-- Flat sprint jump 45 final `z = 2.645539114938402`.
+Source of truth: the mothball reference simulator. There are NO hardcoded
+expected movement values anywhere. `e2e/test_command_parser.py` parses ~37
+mothball command strings and asserts the C++ solver matches mothball **bit-exact
+on all four components** (`x`, `z`, `vx`, `vz`) — so both travel and
+perpendicular drift are pinned to mothball, not to self-generated numbers. The
+C++ ctest fixtures assert only solver behaviour mothball cannot express (status,
+which constraint failed, repaired angle indices, a residual of exactly 0, or an
+axis a wall/threshold zeroes to exactly 0); none encodes a physics magnitude.
 
 ## Full-flow command coverage (command -> Wolfram -> exact -> macro)
 
@@ -74,15 +78,19 @@ mothball bit-for-bit: walk, sprint, walk-jump, sprint-jump, sneak, sneaksprint,
 
 Movement/medium mechanics (walk, sprint, jumps, 45, sneak, sneaksprint, air,
 water, lava, slime, ice, ladder, web, sprint delay) are validated by **parsing
-mothball command strings and comparing the C++ solver to the mothball simulator**
-(`e2e/test_command_parser.py`; ~36 commands, no hand-authored expected values).
-This replaced the per-mechanic hand-authored ctest fixtures.
+mothball command strings and comparing the C++ solver to the mothball simulator
+bit-exact on x/z/vx/vz** (`e2e/test_command_parser.py`; ~37 commands, no
+hand-authored expected values). This replaced the per-mechanic hand-authored
+ctest fixtures.
 
-The solver ctest is now a lean set: the fast C++ unit tests (`exact_movement_tests`
-still pins the locked sprint-jump outputs above) plus fixtures for behaviour
-mothball commands cannot express — angle repair, constraint/objective failure,
-one-axis `wall_hit`, and the seeded-velocity inertia threshold (`inertia_hit`,
-`inertia_avoid`).
+The solver ctest is a lean set with NO hardcoded physics magnitudes: the C++
+unit tests assert only structural invariants (a symmetric 45 input leaves exactly
+zero perpendicular drift — the `-ffp-contract=off` guarantee; a wall cancels its
+axis to exactly 0), and the fixtures assert only behaviour mothball cannot
+express — angle repair, constraint/objective failure, one-axis `wall_hit`, and
+the seeded-velocity inertia threshold (`inertia_hit`, `inertia_avoid`) — via
+status, the worst constraint id, repaired angle indices, and residuals of
+exactly 0.
 
 Building this surfaced a 1-ULP slip bug: fluid slip was computed in float32
 (`0.5F / 0.91F`) but mothball computes it in float64 then rounds (`fl(0.5/0.91)`).

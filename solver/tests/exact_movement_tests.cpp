@@ -58,45 +58,44 @@ wolframtas::ExactInput flat_sprint_jump_input(bool air_45) {
     return input;
 }
 
-void assert_close(double actual, double expected) {
-    if (std::abs(actual - expected) > 1e-15) {
+// Exact, bit-for-bit equality. These pin deterministic float64 results (the
+// locked mothball-matching outputs); there is no acceptable tolerance.
+void assert_exact(double actual, double expected) {
+    if (actual != expected) {
         std::cerr << std::setprecision(17)
                   << "expected " << expected << ", got " << actual
-                  << ", diff " << std::abs(actual - expected) << "\n";
+                  << ", diff " << (actual - expected) << "\n";
         assert(false);
     }
 }
 
 } // namespace
 
+// Structural invariants of the C++ solver itself. The movement PHYSICS (the
+// actual x/z/vx/vz values) is validated bit-exact against the mothball reference
+// simulator in e2e/test_command_parser.py — the source of truth — so nothing
+// here hardcodes a self-generated trajectory magnitude. These check properties
+// that must hold by construction and compare only to an exact 0.
 int main() {
     {
-        wolframtas::ExactInput input = flat_sprint_jump_input(false);
-        const std::vector<int> yaw_indices = wolframtas::seed_yaw_indices(input);
-        const std::vector<wolframtas::State> states = wolframtas::simulate(input, yaw_indices);
-        assert_close(states.at(12).z, 2.6234314852435587);
-        assert_close(states.at(12).move_vz, 0.24936001647089573);
-    }
-    {
+        // A symmetric 45 input (W+A, facing derived as 45 deg) must travel purely
+        // along +z and leave EXACTLY zero perpendicular (x) drift. This is the
+        // whole reason the solver is built with -ffp-contract=off: a fused
+        // strafe*cos - forward*sin would round one product at extended precision
+        // and leave a ~1e-9 x drift. Guard it at the unit level; the same x == 0
+        // is also confirmed against mothball in the command-parity test.
         wolframtas::ExactInput input = flat_sprint_jump_input(true);
-        const std::vector<int> yaw_indices = wolframtas::seed_yaw_indices(input);
-        const std::vector<wolframtas::State> states = wolframtas::simulate(input, yaw_indices);
-        assert_close(states.at(12).z, 2.645539114938402);
-        assert_close(states.at(12).move_vz, 0.2528878364238645);
+        const std::vector<wolframtas::State> states =
+            wolframtas::simulate(input, wolframtas::seed_yaw_indices(input));
+        for (const wolframtas::State& state : states) {
+            assert_exact(state.x, 0.0);
+            assert_exact(state.move_vx, 0.0);
+            assert_exact(state.vx, 0.0);
+        }
     }
     {
-        wolframtas::ExactInput input;
-        input.n = 1;
-        input.movement_slots.push_back(init_slot(1, 0.1));
-        input.movement_direction_radians.push_back(0.0);
-        wolframtas::derive_arrays_from_movement_plan(input);
-        wolframtas::validate_exact_input(input);
-        const std::vector<wolframtas::State> states = wolframtas::simulate(input, wolframtas::seed_yaw_indices(input));
-        assert_close(states.at(1).z, 0.1);
-        assert_close(states.at(1).move_vz, 0.1);
-        assert_close(states.at(1).vz, 0.091);
-    }
-    {
+        // An X wall cancels the x axis: derived imux is 0, so the retained x
+        // velocity after the tick is exactly 0 while z momentum is untouched.
         wolframtas::ExactInput input;
         input.n = 2;
         input.movement_slots.push_back(movement_slot(1, "water", "water", "no45_forward", 0));
@@ -107,16 +106,10 @@ int main() {
         input.movement_direction_radians.assign(2, 0.0);
         wolframtas::derive_arrays_from_movement_plan(input);
         wolframtas::validate_exact_input(input);
-        // mmu now carries the base movement magnitude M (0.02 for water/lava),
-        // not the forward-scaled value; simulate() does the forward/strafe scaling.
-        assert_close(input.imux.at(0), 0.0);
-        assert_close(input.imuz.at(0), 0.800000011920929);
-        assert_close(input.mmu.at(0), 0.019999999552965164);
-        assert_close(input.imux.at(1), 0.50000005960464478);
-        assert_close(input.imuz.at(1), 0.50000005960464478);
-        assert_close(input.mmu.at(1), 0.019999999552965164);
-        const std::vector<wolframtas::State> states = wolframtas::simulate(input, wolframtas::seed_yaw_indices(input));
-        assert_close(states.at(1).retained_vx, 0.0);
+        assert_exact(input.imux.at(0), 0.0);
+        const std::vector<wolframtas::State> states =
+            wolframtas::simulate(input, wolframtas::seed_yaw_indices(input));
+        assert_exact(states.at(1).retained_vx, 0.0);
     }
     return 0;
 }

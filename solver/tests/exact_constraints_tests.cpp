@@ -25,11 +25,12 @@ wolframtas::ExactInput stationary_input() {
     return input;
 }
 
-void assert_close(double actual, double expected) {
-    if (std::abs(actual - expected) > 1e-15) {
+// Exact, bit-for-bit equality. There is no acceptable tolerance.
+void assert_exact(double actual, double expected) {
+    if (actual != expected) {
         std::cerr << std::setprecision(17)
                   << "expected " << expected << ", got " << actual
-                  << ", diff " << std::abs(actual - expected) << "\n";
+                  << ", diff " << (actual - expected) << "\n";
         assert(false);
     }
 }
@@ -51,7 +52,7 @@ int main() {
 
         const wolframtas::Evaluation evaluation = wolframtas::evaluate_candidate(input, wolframtas::seed_yaw_indices(input));
         assert(evaluation.feasible);
-        assert_close(evaluation.residual_norm, 0.0);
+        assert_exact(evaluation.residual_norm, 0.0);
     }
     {
         wolframtas::ExactInput input = stationary_input();
@@ -64,9 +65,9 @@ int main() {
         input.constraints.push_back(constraint);
 
         const wolframtas::Evaluation evaluation = wolframtas::evaluate_candidate(input, wolframtas::seed_yaw_indices(input));
+        // Behavioural: z=0 violates z>=0.2, and this is the worst constraint.
         assert(!evaluation.feasible);
         assert(evaluation.worst_constraint_id == "lower");
-        assert_close(evaluation.residual_norm, 0.15000000000000002);
     }
     {
         wolframtas::ExactInput input = stationary_input();
@@ -77,10 +78,8 @@ int main() {
         input.objective.tolerance = 0.05;
 
         const wolframtas::Evaluation evaluation = wolframtas::evaluate_candidate(input, wolframtas::seed_yaw_indices(input));
+        // Behavioural: objective target 0.2 with z=0 exceeds tolerance.
         assert(!evaluation.feasible);
-        assert_close(evaluation.objective_value, 0.0);
-        assert_close(evaluation.objective_deviation, 0.2);
-        assert_close(evaluation.objective_residual, 0.15000000000000002);
     }
     {
         wolframtas::ExactInput input;
@@ -98,9 +97,10 @@ int main() {
         wolframtas::validate_exact_input(input);
 
         const wolframtas::Evaluation evaluation = wolframtas::evaluate_candidate(input, wolframtas::seed_yaw_indices(input));
+        // Behavioural: post-retention z velocity exceeds the 0.005 threshold,
+        // so the inertia-hit event (requires below threshold) is violated.
         assert(!evaluation.feasible);
         assert(evaluation.worst_constraint_id == "hit_z");
-        assert_close(evaluation.residual_norm, 0.004100000000000001);
     }
     {
         wolframtas::ExactInput input;
@@ -119,7 +119,7 @@ int main() {
 
         const wolframtas::Evaluation evaluation = wolframtas::evaluate_candidate(input, wolframtas::seed_yaw_indices(input));
         assert(evaluation.feasible);
-        assert_close(evaluation.residual_norm, 0.0);
+        assert_exact(evaluation.residual_norm, 0.0);
     }
     return 0;
 }

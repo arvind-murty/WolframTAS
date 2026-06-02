@@ -26,8 +26,8 @@ DEFAULT_COMMANDS = [
     "walk(10)", "sprint(8)", "wj(5)", "sprintjump(6)", "sneakjump(4)",
     # sprint-jump
     "sj(12)", "sj(20)",
-    # 45 strafe (ground)
-    "s45(8)", "w45(6)", "sj45(10)",
+    # 45 strafe (ground) — exercises perpendicular-drift cancellation vs mothball
+    "s45(8)", "w45(6)", "sj45(10)", "sj45(12)",
     # sneak / sneaksprint
     "sn(5)", "sns(6)", "sns45(7)",
     # air
@@ -64,12 +64,17 @@ def check_one(command: str) -> str | None:
     states = json.loads(completed.stdout)["states_exact"]
     # mothball reports position one tick before the final velocity; with the
     # leading init slot, position aligns at states[n-1] and velocity at states[n].
-    solver_z = float(states[n - 1]["position"]["z"])
-    solver_vz = float(states[n]["velocity"]["z"])
-    if solver_z != mothball["z"]:
-        return f"position z: solver {solver_z!r} vs mothball {mothball['z']!r}"
-    if solver_vz != mothball["vz"]:
-        return f"velocity vz: solver {solver_vz!r} vs mothball {mothball['vz']!r}"
+    # Compare BOTH axes (z = travel, x = perpendicular drift) and both velocity
+    # components, all bit-exact against mothball — no hardcoded expected values.
+    checks = (
+        ("position x", float(states[n - 1]["position"]["x"]), mothball["x"]),
+        ("position z", float(states[n - 1]["position"]["z"]), mothball["z"]),
+        ("velocity vx", float(states[n]["velocity"]["x"]), mothball["vx"]),
+        ("velocity vz", float(states[n]["velocity"]["z"]), mothball["vz"]),
+    )
+    for label, solver_value, mothball_value in checks:
+        if solver_value != mothball_value:
+            return f"{label}: solver {solver_value!r} vs mothball {mothball_value!r}"
     return None
 
 

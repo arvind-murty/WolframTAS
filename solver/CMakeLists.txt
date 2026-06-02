@@ -51,14 +51,18 @@ enable_testing()
 add_test(NAME angle_table_smoke COMMAND angle_table_smoke)
 add_test(NAME exact_movement_tests COMMAND exact_movement_tests)
 add_test(NAME exact_constraints_tests COMMAND exact_constraints_tests)
-# Movement/medium scenarios (flat sprint-jump, 45, water, lava, slime, ice,
-# ladder, web, sneak, sprint delay) are validated by parsing mothball command
-# strings and comparing the solver to the mothball simulator; see
-# e2e/test_command_parser.py (no hand-authored expected values). The fast C++
-# unit test (exact_movement_tests) still pins the locked sprint-jump outputs.
-# The fixtures below test solver behaviour mothball commands can't express:
-# angle repair, constraint/objective failure, wall-axis cancellation, and the
-# seeded-velocity inertia threshold.
+# ALL movement/medium physics (flat sprint-jump, 45, water, lava, slime, ice,
+# ladder, web, sneak, sprint delay) is validated bit-exact against the mothball
+# reference simulator by parsing mothball command strings and comparing x/z/vx/vz
+# to mothball — the source of truth, no hand-authored expected values; see
+# e2e/test_command_parser.py.
+#
+# The fixtures below test solver behaviour mothball commands cannot express
+# (angle repair, constraint/objective failure, wall-axis cancellation, the
+# seeded-velocity inertia threshold). They assert ONLY behavioural/structural
+# outcomes — status, which constraint failed, repaired angle indices, a residual
+# of exactly 0, or an axis a wall/threshold zeroes to exactly 0 — never a
+# self-generated physics magnitude.
 add_test(
     NAME exact_solver_repairs_angle_index
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/assert_solver_fixture.py
@@ -98,7 +102,6 @@ add_test(
         --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/objective_fail_exact_solver_input.json
         --validate-exact-solution-schema
         --expect status=failed
-        --expect diagnostics.objective_deviation=0.32739998400211334
 )
 add_test(
     NAME exact_solver_inertia_hit
@@ -107,10 +110,9 @@ add_test(
         --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/inertia_hit_exact_solver_input.json
         --validate-exact-solution-schema
         --expect status=solved
-        --expect states_exact[2].position.x=0.01050500014424324
-        --expect states_exact[2].velocity.x=0.00500500014424324
+        # The inertia hit drops the x velocity below the 0.005 threshold, so it
+        # is zeroed; pure-x motion keeps z at exactly 0. Structural, not a magnitude.
         --expect states_exact[3].velocity.x=0
-        --expect states_exact[3].position.x=0.01050500014424324
         --expect states_exact[3].position.z=0
         --expect diagnostics.final_residual_norm=0
 )
@@ -120,9 +122,9 @@ add_test(
         --solver $<TARGET_FILE:wolframtas_solver>
         --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/inertia_avoid_exact_solver_input.json
         --validate-exact-solution-schema
+        # Inertia avoid: the velocity stays above threshold, so the avoid
+        # constraint is satisfied and the solve succeeds with zero residual.
         --expect status=solved
-        --expect states_exact[4].position.z=0.4302313432562946
-        --expect states_exact[4].velocity.z=0.1807233625357752
         --expect diagnostics.final_residual_norm=0
 )
 add_test(
@@ -132,10 +134,9 @@ add_test(
         --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/wall_hit_x_exact_solver_input.json
         --validate-exact-solution-schema
         --expect status=solved
-        --expect states_exact[3].position.x=0.3820000052452088
+        # The X wall cancels the x velocity to exactly 0 on the hit tick.
+        # Structural (the blocked axis is zeroed), not a self-generated magnitude.
         --expect states_exact[3].velocity.x=0
-        --expect states_exact[3].position.z=0.5476200147914888
-        --expect states_exact[3].velocity.z=0.16562000954628006
         --expect diagnostics.final_residual_norm=0
 )
 add_test(
@@ -144,10 +145,9 @@ add_test(
         --solver $<TARGET_FILE:wolframtas_solver>
         --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/wall_sprint_cancel_exact_solver_input.json
         --validate-exact-solution-schema
+        # Sprint cancel at an air wall tick: the scenario solves to zero residual.
+        # The sprint-delay mechanics themselves are validated bit-exact against
+        # mothball (sprintair / sns45 / sj45 ... in e2e/test_command_parser.py).
         --expect status=solved
-        --expect states_exact[4].velocity.z=0.0845367786639481
-        --expect states_exact[4].position.z=0.21235033687733879
-        --expect states_exact[5].position.z=0.30887880791105493
-        --expect states_exact[6].position.z=0.4221997175228469
         --expect diagnostics.final_residual_norm=0
 )
