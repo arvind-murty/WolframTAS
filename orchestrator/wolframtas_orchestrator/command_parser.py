@@ -129,9 +129,8 @@ def parse_command(command: str) -> dict[str, Any]:
             "movement_directions": directions,
         },
     }
-    # has_wall signals the comparison harness that mothball's reference used a
-    # catch-up stop (so its final state aligns with the solver's actual last
-    # state states[n], retained velocity), not the usual one-behind states[n-1].
+    # wall_hit is retained as a diagnostic flag for callers; the reference path
+    # now follows normal tick alignment and does not need a special compare mode.
     return {"exact_input": exact_input, "mothball_final": mothball_final, "wall_hit": has_wall}
 
 
@@ -176,15 +175,12 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
     Inputless "stop" ticks are just mothball's ``stop`` / ``stopair`` commands
     (aliases ``st`` / ``sta``); they need no special handling here.
 
-    Wall-collision modifiers ``hitx=<v>`` / ``hitz=<v>`` mark a tick that crosses
-    a wall on an axis: the solver clamps the position to the wall, zeroes that
-    axis's velocity, and drops sprint. mothball has no collision, so we exploit
-    the fact that the post-collision state is exactly (pos=v, axis-velocity=0)
-    regardless of the hit tick's movement: we hand mothball that state directly
-    via setpos/setvel instead of simulating the hit, and append ONE catch-up stop
-    so mothball's move-then-accelerate order settles the post-wall acceleration
-    into position (matching the solver's accelerate-then-move). See parse_command
-    for the resulting comparison alignment."""
+    Wall-collision modifiers ``hitx=<v>`` / ``hitz=<v>`` annotate candidate hit
+    ticks. The solver checks crossing on that tick and, if crossed, clamps the
+    blocked axis to the wall coordinate, zeroes blocked-axis velocity, and drops
+    sprint for one following tick. mothball has no collision; the reference pass
+    mirrors this by running each tick normally, applying the same crossing check,
+    then patching only the blocked axis and scheduling a one-tick unsprint."""
     from cogs.movement.player import Player
     from cogs.movement.context import Context
     from cogs.movement import parsers
@@ -192,25 +188,32 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
     tuples = parsers.string_to_args(command)
     has_wall = any(_split_wall_modifier(mods)[0] is not None for _, mods, _ in tuples)
 
-    captured: list[tuple[dict, float, float]] = []
+    captured: list[tuple[dict, float, float, float, float, float, float]] = []
     tick_wall: dict[int, tuple[str, float]] = {}
+    crossed_ticks: dict[int, bool] = {}
     original_move = Player.move
+    virtual_x = 0.0
+    virtual_z = 0.0
 
     def spy(self, ctx):  # type: ignore[no-untyped-def]
+        nonlocal virtual_x, virtual_z
         result = original_move(self, ctx)
         # Effective facing (MC yaw): last_rotation folds in the rotation arg /
         # default_rotation / rotation_offset; add the 45-command function_offset.
         facing = float(self.last_rotation) + float(ctx.args.get("function_offset", 0.0))
         # The slip the tick actually used (so setslip overrides are picked up).
         slip = float(self.prev_slip)
-        captured.append((dict(ctx.args), facing, slip))
+        post_vx = float(self.vx)
+        post_vz = float(self.vz)
+        captured.append((dict(ctx.args), facing, slip, virtual_x, virtual_z, post_vx, post_vz))
+        virtual_x += post_vx
+        virtual_z += post_vz
         return result
 
     # Pass A: run the command (wall modifiers stripped) to capture per-tick
     # params for the solver slots and mark which ticks carry a wall collision.
     player = Player()
     Player.move = spy
-    last_airborne = False
     try:
         ctx = Context(player, [{}], False, "xz")
         for cmd, mods, args in tuples:
@@ -220,9 +223,13 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
             if wall is not None:
                 if len(captured) - start != 1:
                     raise ValueError("hitx=/hitz= requires a single-tick command")
+                axis, value = wall
+                _, _, _, before_x, before_z, post_vx, post_vz = captured[start]
+                before = before_x if axis == "x" else before_z
+                velocity_after = post_vx if axis == "x" else post_vz
+                after = before + velocity_after
+                crossed_ticks[start] = (before < value <= after) or (before > value >= after)
                 tick_wall[start] = wall
-            if captured:
-                last_airborne = bool(captured[-1][0].get("airborne", False))
     finally:
         Player.move = original_move
 
@@ -230,12 +237,16 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
     # bookkeeping offset, so states_exact[n-1] equals mothball's final position.
     slots: list[dict] = [{"slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91}]
     directions = [{"slot": 1, "radians": 0.0, "degrees": 0.0}]
-    for index, (args, facing_deg, slip) in enumerate(captured):
+    for index, (args, facing_deg, slip, _vx_before, _vz_before, _post_vx, _post_vz) in enumerate(captured):
         slot_index = index + 2
         slot = _slot_from_move_args(slot_index, args, facing_deg, slip)
         if index in tick_wall:
             axis, value = tick_wall[index]
             slot["wall_collision"] = {"axis": axis, "value": value}
+            if crossed_ticks.get(index, False) and index + 1 < len(captured):
+                # Wall sprint cancel: crossed wall ticks force one following
+                # unsprinted tick in the parsed movement plan.
+                captured[index + 1][0]["sprinting"] = False
         md = slot.pop("_movement_direction")
         slots.append(slot)
         directions.append({"slot": slot_index, "radians": md, "degrees": math.degrees(md)})
@@ -249,21 +260,53 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
         }
         return slots, directions, mothball_final, False
 
-    # Pass B: mothball reference. Replace each hit tick with a direct set of the
-    # post-collision state (the clamp result), run everything else normally, then
-    # append one catch-up stop so the deferred post-wall acceleration settles.
+    # Pass B: mothball reference. Execute ticks normally while injecting wall-hit
+    # effects for parity:
+    #   1) on a wall-modified tick, if crossing occurs, clamp+zero blocked axis
+    #   2) force sprinting=False for exactly the next tick
     ref = Player()
     ref_ctx = Context(ref, [{}], False, "xz")
-    for cmd, mods, args in tuples:
-        wall, clean = _split_wall_modifier(mods)
-        if wall is not None:
+    ref_tick = 0
+    force_unsprint_next = False
+    original_ref_move = Player.move
+
+    def ref_spy(self, ctx):  # type: ignore[no-untyped-def]
+        nonlocal ref_tick, force_unsprint_next
+        override_sprint = force_unsprint_next
+        sprint_key_present = "sprinting" in ctx.args
+        sprint_original = ctx.args.get("sprinting")
+        if force_unsprint_next:
+            ctx.args["sprinting"] = False
+            force_unsprint_next = False
+
+        result = original_ref_move(self, ctx)
+        if override_sprint:
+            if sprint_key_present:
+                ctx.args["sprinting"] = sprint_original
+            else:
+                ctx.args.pop("sprinting", None)
+
+        wall = tick_wall.get(ref_tick)
+        if wall is not None and crossed_ticks.get(ref_tick, False):
             axis, value = wall
-            pos_cmd, vel_cmd = ("setposx", "setvx") if axis == "x" else ("setposz", "setvz")
-            parsers.execute_command(ref_ctx, pos_cmd, [], [repr(value)])
-            parsers.execute_command(ref_ctx, vel_cmd, [], ["0"])
-        else:
+            if axis == "x":
+                self.x = float(value)
+                self.vx = 0.0
+            else:
+                self.z = float(value)
+                self.vz = 0.0
+            force_unsprint_next = True
+
+        ref_tick += 1
+        return result
+
+    Player.move = ref_spy
+    try:
+        for cmd, mods, args in tuples:
+            _wall, clean = _split_wall_modifier(mods)
             parsers.execute_command(ref_ctx, cmd, clean, args)
-    parsers.execute_command(ref_ctx, "sta" if last_airborne else "st", [], ["1"])
+    finally:
+        Player.move = original_ref_move
     mothball_final = {
         "x": float(ref.x),
         "z": float(ref.z),

@@ -25,6 +25,9 @@
         "acceleration": { "$ref": "#/$defs/acceleration" },
         "retention": { "$ref": "#/$defs/retention" },
         "wall_hit": { "$ref": "#/$defs/wall_hit" },
+        "wall_collision": { "$ref": "#/$defs/wall_collision" },
+        "web": { "type": "boolean" },
+        "ladder": { "type": "boolean" },
         "speed": { "type": "number", "minimum": 0 },
         "imux": { "type": "number" },
         "imuz": { "type": "number" },
@@ -89,6 +92,16 @@
           "items": { "type": "string", "enum": ["x", "z"] },
           "uniqueItems": true
         },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "wall_collision": {
+      "type": "object",
+      "required": ["axis", "value"],
+      "properties": {
+        "axis": { "type": "string", "enum": ["x", "z"] },
+        "value": { "type": "number" },
         "reason": { "type": "string" }
       },
       "additionalProperties": false

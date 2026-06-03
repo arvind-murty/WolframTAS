@@ -151,3 +151,37 @@ add_test(
         --expect status=solved
         --expect diagnostics.final_residual_norm=0
 )
+add_test(
+    NAME exact_solver_wall_collision_x
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/assert_solver_fixture.py
+        --solver $<TARGET_FILE:wolframtas_solver>
+        --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/wall_collision_x_exact_solver_input.json
+        --validate-exact-solution-schema
+        --expect status=solved
+        # Threshold collision on X: crossing clamps X and zeroes retained X velocity.
+        --expect states_exact[1].retained_velocity.x=0
+        --expect diagnostics.final_residual_norm=0
+)
+add_test(
+    NAME exact_solver_wall_collision_z
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/assert_solver_fixture.py
+        --solver $<TARGET_FILE:wolframtas_solver>
+        --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/wall_collision_z_exact_solver_input.json
+        --validate-exact-solution-schema
+        --expect status=solved
+        # Threshold collision on Z: crossing clamps Z and zeroes retained Z velocity.
+        --expect states_exact[1].retained_velocity.z=0
+        --expect diagnostics.final_residual_norm=0
+)
+add_test(
+    NAME exact_solver_wall_collision_z_no_cross
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/assert_solver_fixture.py
+        --solver $<TARGET_FILE:wolframtas_solver>
+        --input ${CMAKE_CURRENT_SOURCE_DIR}/../examples/simple_jump/wall_collision_z_no_cross_exact_solver_input.json
+        --validate-exact-solution-schema
+        --expect status=solved
+        # No crossing case: the position remains the moved value (0.2), so no
+        # wall clamp to z=0.25 occurred.
+        --expect states_exact[1].position.z=0.2
+        --expect diagnostics.final_residual_norm=0
+)
