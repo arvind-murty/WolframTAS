@@ -16,6 +16,11 @@ movement_plan + typed constraints
 -> exact JSON + optional macro CSV
 ```
 
+Staged zero-tolerance behavior is now explicit: when
+`solve-exact-input --default-relaxed-tolerance 0.0` is used, the relaxed
+Wolfram pass is skipped and `--relaxed-out` is a verbatim copy of strict
+Mathematica output (it is no longer replaced with exact-solver output).
+
 The no-mock end-to-end test runs this path with real `wolframscript` and the
 built C++ solver (run under `.venv-oracle` — see the Toolchain section):
 
@@ -56,6 +61,13 @@ The exact solver currently supports fixed-tick horizontal movement cases:
 - Inertia `hit` and `avoid` residual checks using post-retention velocity
   before threshold zeroing.
 - Local discrete repair in 65536 Minecraft angle-index space.
+
+Important operational note: `status: failed` can still occur with strict
+constraints even when the constraint formulas are correct, because repair is a
+bounded local search (`max_repair_iterations`, `max_candidate_evaluations`,
+`top_k_moves`, `max_index_delta_per_iteration`). In those cases, shortfall is a
+search-budget/heuristic outcome, not a separate relaxed-constraint acceptance
+path inside the exact checker.
 
 The exact-solution JSON (`states_exact`) exposes both `velocity` (the
 pre-retention move velocity) and `retained_velocity` (post-drag, what carries to
@@ -128,16 +140,16 @@ Beyond mothball's own commands, the parser adds two WolframTAS-only conveniences
 - `s[hitx=val](1)` / `s[hitz=val](1)` is a WolframTAS-only wall-collision
   modifier (mothball has no collision). The hit tick crosses the wall at `val`;
   the solver clamps the axis to `val` and zeroes its velocity. mothball can't
-  simulate this, so the parser validates it by handing mothball the
-  post-collision state directly (`setposz(val) setvz(0)`) instead of simulating
-  the hit, then appending one catch-up `stop` so mothball's move-then-accelerate
-  order settles the post-wall acceleration into position. With the catch-up,
-  mothball's final aligns with the solver's actual last state `states[n]`
-  (retained velocity), so `check_command_sim` compares there for wall commands.
-  Validated bit-exact for 1D movement straight into the wall; 2D mixed-axis
-  (significant motion on the non-walled axis) is a known gap (1-ULP perpendicular
-  artifact from the catch-up), and wall sprint removal is not yet wired into this
-  modifier.
+  simulate this directly, so Pass B of the parser runs each tick normally,
+  applies the same crossing check, then patches only the blocked axis (position
+  clamped to `val`, velocity zeroed) and forces `sprinting=False` for the next
+  tick in the mothball reference; Pass A also patches `controls.sprint = false`
+  on the appropriate slot in the derived plan. Validated bit-exact for both 1D
+  and 2D mixed-axis movement — 30-degree facing regressions in DEFAULT_COMMANDS
+  confirm there is no perpendicular artifact (the old "catch-up stop" approach
+  was replaced with this direct-patch; that doc note was stale). Sprint removal
+  is the plan builder's responsibility; the C++ solver does NOT auto-cancel
+  because constraints are satisfied with the mmu the plan computed.
 
 ## Cross-model consistency (single source of truth)
 

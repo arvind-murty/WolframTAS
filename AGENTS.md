@@ -98,6 +98,10 @@ let mod concerns drive the core contracts.
   Mathematica arrays from `movement_plan`, runs strict and relaxed Mathematica
   solves, checks objective drift, writes the generated exact input, and invokes
   the C++ exact solver.
+- Zero-relaxed-tolerance semantics for `solve-exact-input`: when
+  `default_relaxed_tolerance == 0.0`, the relaxed Wolfram run is skipped and
+  `--relaxed-out` is written as a verbatim copy of strict Mathematica output
+  (not exact-solver output).
 
 ## Engineering Rules
 
@@ -244,10 +248,15 @@ let mod concerns drive the core contracts.
   `wall_hit.axes` retention trick: a slot's `wall_collision {axis, value}` makes
   `simulate()` clamp the axis position to `value` and zero that axis's velocity
   when the move crosses it. The command parser exposes it as `s[hitx=val](1)` /
-  `s[hitz=val](1)`. Because mothball has no collision, the parser validates it by
-  setting mothball's post-collision state directly (`setpos`/`setvel`) plus one
-  catch-up `stop`; bit-exact for 1D (straight into the wall). 2D mixed-axis and
-  wall sprint removal are not yet wired (see docs/next-tasks.md).
+  `s[hitz=val](1)`. Because mothball has no collision, Pass B of the parser runs
+  each tick normally, then patches only the blocked axis (position clamped to
+  `val`, velocity zeroed) and forces `sprinting=False` for the next tick in the
+  mothball reference; it also patches `controls.sprint = false` on the
+  appropriate slot in the derived plan (Pass A). Validated bit-exact for both 1D
+  and 2D mixed-axis movement (30-degree facing regressions in DEFAULT_COMMANDS
+  confirm no perpendicular artifact). Sprint removal is the plan builder's
+  responsibility: the solver does NOT auto-cancel sprint on crossing because
+  constraints are satisfied with the mmu the plan builder computed.
 - `stop`/`stopair` (mothball aliases `st`/`sta`) are inputless coast ticks and
   flow through the parser unchanged.
 - Landing block overlap constraints use player-center overlap. For a block
@@ -295,6 +304,15 @@ let mod concerns drive the core contracts.
   movement magnitude M; simulate() applies the forward/strafe scaling and the
   separate sprint-jump 0.2 boost. No orchestrator resultant->facing conversion is
   needed.
+- Repair semantics are output-defining: when the exact solver changes yaw indices
+  to satisfy constraints/objective, those repaired indices are used for BOTH
+  constraint evaluation and the FINAL simulated path/output (`states_exact`,
+  macro yaw deltas, and diagnostics). Repaired indices are not diagnostics-only.
+- Exact-solver constraint math for `position_delta_bound`/`position_bounds` is
+  strict (`exact_tolerance` defaults to `0`). Any remaining shortfall in a
+  `failed` result is currently a repair-search/budget outcome (local search can
+  stop before finding a feasible index set with default settings), not a relaxed
+  acceptance path.
 - The solver compiles with `-ffp-contract=off`. numpy never fuses multiply-add,
   and a fused `strafe*cos - forward*sin` computes one product at extended
   precision, breaking the exact cancellation that makes a symmetric 45 input

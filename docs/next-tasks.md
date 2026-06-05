@@ -4,21 +4,27 @@ This is the recommended implementation queue for the next agent/session.
 
 ## Current open work (top of queue, as of the latest commits)
 
-Recently completed (see git log + docs/current-status.md): single-source movement
-constants table (`tools/gen_movement_constants.py`), cobweb modeled in the
-full-flow Mathematica stage, the test suite rewritten to compare bit-exact vs
-mothball with NO hardcoded numbers, `stop`/`stopair` parity, and the
-`s[hitx=val]`/`s[hitz=val]` wall-collision modifier.
+Recently completed: single-source movement constants table, cobweb Mathematica
+model, test suite rewritten to compare bit-exact vs mothball, `stop`/`stopair`
+parity, `s[hitx=val]`/`s[hitz=val]` wall-collision modifier. 2D mixed-axis wall
+validation confirmed working (the old "catch-up stop" note in the docs was stale;
+Pass B now patches the crossed axis directly — see below).
 
 Open, roughly in order:
 
-1. Wall collision follow-ups: (a) wire sprint removal into the `wall_collision`
-   tick (drop the attribute for the next slot, ground/air aware); (b) handle 2D
-   mixed-axis walls (the single catch-up stop leaves a 1-ULP perpendicular
-   artifact — only 1D "straight into the wall" is validated today).
-2. The rest of this file (schema validation, legacy fixture path, Wolfram
+1. Exact-solver repair robustness for hard constraints: default bounded search
+   can return `status: failed` with small x/z shortfall even though a feasible
+   repaired index set exists under larger search settings. Decide and implement
+   policy (better default budgets, adaptive widening/retry, or deterministic
+   fallback search) and add a regression fixture mirroring this behavior.
+2. Wall sprint removal: the plan builder (command parser / Mathematica output)
+   sets `controls.sprint` per slot; `wall_collision` sprint cancellation is NOT
+   auto-applied in the solver because constraints are satisfied with the mmu the
+   plan builder computed. If a hand-authored input needs sprint cancellation,
+   clear `controls.sprint` on the appropriate slot explicitly.
+3. The rest of this file (schema validation, legacy fixture path, Wolfram
    rendering ownership, mod-facing pipeline) is still open and unchanged.
-3. Push the local commits (`git push`) — several commits are ahead of origin.
+4. Push the local commits (`git push`) — several commits are ahead of origin.
 
 The detailed historical checklist follows.
 
