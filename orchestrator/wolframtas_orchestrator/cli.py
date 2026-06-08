@@ -3,13 +3,14 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
-from .mathematica_script import render_mathematica_script, render_position_bounds_constraint
+from .mathematica_script import render_mathematica_constraint, render_mathematica_script
 from .movement_model import derive_movement_model
 
 
@@ -30,7 +31,6 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the WolframTAS optimization pipeline.")
     parser.add_argument("request", type=Path, help="Optimization request JSON from the mod.")
     parser.add_argument("--mathematica-command", nargs="+", help="Command that emits approximate solution JSON.")
-    parser.add_argument("--solver-command", nargs="+", help="Command that reads approximate JSON on stdin and emits exact JSON.")
     parser.add_argument("--approx-solution", type=Path, help="Use an existing approximate solution fixture.")
     parser.add_argument("--exact-solution-out", type=Path, required=True, help="Path for exact solution JSON.")
 
@@ -46,11 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         parser.error("provide either --approx-solution or --mathematica-command")
 
-    if args.solver_command:
-        exact_solution = run_json_filter(args.solver_command, approximate_solution)
-    else:
-        exact_solution = fixture_exact_solution(approximate_solution, request)
-
+    exact_solution = fixture_exact_solution(approximate_solution, request)
     args.exact_solution_out.parent.mkdir(parents=True, exist_ok=True)
     args.exact_solution_out.write_text(json.dumps(exact_solution, indent=2) + "\n", encoding="utf-8")
     return 0
@@ -143,29 +139,33 @@ def run_staged_exact_flow(
     *,
     wolframscript: str,
     optimizer_script: Path,
-    solver_command: list[str],
+    solver_command: list[str] | None = None,
     default_relaxed_tolerance: float,
     solution_tolerance: float,
     macro_csv_out: Path | None = None,
 ) -> dict[str, Any]:
-    """Run the staged Mathematica (strict + relaxed) optimize then the C++ exact
-    solver for an exact-solver template. Returns the strict/relaxed Mathematica
-    solutions, the generated exact-solver input, and the exact solution. If
-    macro_csv_out is given, the solver also writes the macro CSV there."""
+    """Run the staged Mathematica (strict + relaxed) optimize then the Python
+    exact solver for an exact-solver template. Returns the strict/relaxed
+    Mathematica solutions, the generated exact-solver input, and the exact
+    solution. If macro_csv_out is given, writes the macro CSV there."""
     strict_problem = exact_template_to_mathematica_problem(
         exact_template, constraint_tolerance=0.0, fill_missing_tolerance=False
     )
+    skip_relaxed_wolfram = default_relaxed_tolerance == 0.0
     relaxed_problem = exact_template_to_mathematica_problem(
         exact_template, constraint_tolerance=default_relaxed_tolerance, fill_missing_tolerance=True
     )
 
     with tempfile.TemporaryDirectory(prefix="wolframtas-solve-") as directory:
         strict_input = Path(directory) / "strict.json"
-        relaxed_input = Path(directory) / "relaxed.json"
         strict_input.write_text(json.dumps(materialize_mathematica_problem(strict_problem)), encoding="utf-8")
-        relaxed_input.write_text(json.dumps(materialize_mathematica_problem(relaxed_problem)), encoding="utf-8")
         strict_solution = run_wolfram_file(wolframscript, optimizer_script, strict_input)
-        relaxed_solution = run_wolfram_file(wolframscript, optimizer_script, relaxed_input)
+        if skip_relaxed_wolfram:
+            relaxed_solution = copy.deepcopy(strict_solution)
+        else:
+            relaxed_input = Path(directory) / "relaxed.json"
+            relaxed_input.write_text(json.dumps(materialize_mathematica_problem(relaxed_problem)), encoding="utf-8")
+            relaxed_solution = run_wolfram_file(wolframscript, optimizer_script, relaxed_input)
 
     assert_solution_close(strict_solution, relaxed_solution, solution_tolerance)
     strict_solution.setdefault("diagnostics", {})["stage"] = "strict"
@@ -176,11 +176,11 @@ def run_staged_exact_flow(
     )
 
     exact_input = build_exact_solver_input(exact_template, relaxed_solution, solution_tolerance)
-    full_solver_command = list(solver_command)
+    from .python_solver import solve as _py_solve, write_macro_csv as _write_csv
+    exact_solution = _py_solve(exact_input)
     if macro_csv_out is not None:
         macro_csv_out.parent.mkdir(parents=True, exist_ok=True)
-        full_solver_command += ["--macro-csv-out", str(macro_csv_out)]
-    exact_solution = run_json_filter(full_solver_command, exact_input)
+        _write_csv(macro_csv_out, exact_solution)
 
     return {
         "strict_solution": strict_solution,
@@ -197,7 +197,7 @@ def solve_exact_input_command(argv: list[str]) -> int:
     parser.add_argument("--relaxed-out", type=Path, required=True, help="Path for relaxed Mathematica solution JSON.")
     parser.add_argument("--exact-input-out", type=Path, required=True, help="Path for generated exact solver input JSON.")
     parser.add_argument("--exact-out", type=Path, required=True, help="Path for exact solver output JSON.")
-    parser.add_argument("--solver-command", nargs="+", required=True, help="Exact solver command that reads JSON on stdin.")
+    parser.add_argument("--solver-command", nargs="+", help="Ignored (kept for backward compat; Python solver is used).")
     parser.add_argument("--wolframscript", default="wolframscript", help="wolframscript executable path.")
     parser.add_argument(
         "--optimizer-script",
@@ -225,7 +225,10 @@ def solve_exact_input_command(argv: list[str]) -> int:
         (args.exact_out, "exact_solution"),
     ):
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(json.dumps(result[key], indent=2) + "\n", encoding="utf-8")
+        payload = result[key]
+        if key == "relaxed_solution" and args.default_relaxed_tolerance == 0.0:
+            payload = result["strict_solution"]
+        output_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return 0
 
 
@@ -234,10 +237,26 @@ def solve_command_command(argv: list[str]) -> int:
         description="Optimize a mothball command end-to-end: parse -> Mathematica optimize -> exact solver -> macro CSV."
     )
     parser.add_argument("command", help="Mothball command string, e.g. 'sj45(12)'.")
-    parser.add_argument("--macro-out", type=Path, required=True, help="Path for the macro CSV.")
-    parser.add_argument("--solver-command", nargs="+", required=True, help="Exact solver command that reads JSON on stdin.")
+    parser.add_argument("--name", help="Optional run name used in the exact template and auto output filenames.")
+    parser.add_argument("--out-dir", type=Path, default=Path("out/solve-command"), help="Directory for auto-generated outputs.")
+    parser.add_argument("--macro-out", type=Path, help="Path for the macro CSV.")
+    parser.add_argument("--solver-command", nargs="+", help="Ignored (Python solver is used).")
+    parser.add_argument(
+        "--constraint-json",
+        action="append",
+        default=[],
+        help="Inline JSON object constraint to append (repeatable).",
+    )
+    parser.add_argument(
+        "--constraints-file",
+        type=Path,
+        help="JSON file containing constraints (array) or an object with a constraints array.",
+    )
     parser.add_argument("--objective-axis", default="z", choices=["x", "z"], help="Axis to optimize (default z = travel distance).")
     parser.add_argument("--sense", default="maximize", choices=["maximize", "minimize"])
+    parser.add_argument("--init-speed", type=float, default=0.0, help="Init-slot speed for chained start state.")
+    parser.add_argument("--init-imux", type=float, default=0.91, help="Init-slot X retention multiplier.")
+    parser.add_argument("--init-imuz", type=float, default=0.91, help="Init-slot Z retention multiplier.")
     parser.add_argument("--exact-out", type=Path, help="Optional path for the exact solution JSON.")
     parser.add_argument("--exact-input-out", type=Path, help="Optional path for the generated exact solver input JSON.")
     parser.add_argument("--wolframscript", default="wolframscript", help="wolframscript executable path.")
@@ -253,23 +272,102 @@ def solve_command_command(argv: list[str]) -> int:
 
     from .command_parser import command_to_exact_template
 
-    exact_template = command_to_exact_template(args.command, objective_axis=args.objective_axis, sense=args.sense)
+    macro_out, exact_input_out, exact_out = resolve_solve_command_outputs(
+        args.name,
+        args.out_dir,
+        args.macro_out,
+        args.exact_input_out,
+        args.exact_out,
+    )
+    constraints = parse_cli_constraints(args.constraint_json, args.constraints_file)
+
+    exact_template = command_to_exact_template(
+        args.command,
+        objective_axis=args.objective_axis,
+        sense=args.sense,
+        init_speed=args.init_speed,
+        init_imux=args.init_imux,
+        init_imuz=args.init_imuz,
+    )
+    if args.name:
+        exact_template["name"] = args.name
+    exact_template["constraints"] = constraints
     result = run_staged_exact_flow(
         exact_template,
         wolframscript=args.wolframscript,
         optimizer_script=args.optimizer_script,
-        solver_command=args.solver_command,
         default_relaxed_tolerance=args.default_relaxed_tolerance,
         solution_tolerance=args.solution_tolerance,
-        macro_csv_out=args.macro_out,
+        macro_csv_out=macro_out,
     )
-    if args.exact_input_out is not None:
-        args.exact_input_out.parent.mkdir(parents=True, exist_ok=True)
-        args.exact_input_out.write_text(json.dumps(result["exact_input"], indent=2) + "\n", encoding="utf-8")
-    if args.exact_out is not None:
-        args.exact_out.parent.mkdir(parents=True, exist_ok=True)
-        args.exact_out.write_text(json.dumps(result["exact_solution"], indent=2) + "\n", encoding="utf-8")
+    if exact_input_out is not None:
+        exact_input_out.parent.mkdir(parents=True, exist_ok=True)
+        exact_input_out.write_text(json.dumps(result["exact_input"], indent=2) + "\n", encoding="utf-8")
+    if exact_out is not None:
+        exact_out.parent.mkdir(parents=True, exist_ok=True)
+        exact_out.write_text(json.dumps(result["exact_solution"], indent=2) + "\n", encoding="utf-8")
     return 0
+
+
+def parse_cli_constraints(constraint_json: list[str], constraints_file: Path | None) -> list[dict[str, Any]]:
+    constraints: list[dict[str, Any]] = []
+    for text in constraint_json:
+        try:
+            value = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"invalid --constraint-json value: {text!r}") from exc
+        if not isinstance(value, dict):
+            raise ValueError("--constraint-json expects a JSON object")
+        constraints.append(value)
+
+    if constraints_file is None:
+        return constraints
+
+    with constraints_file.open("r", encoding="utf-8") as file:
+        payload = json.load(file)
+    if isinstance(payload, list):
+        for item in payload:
+            if not isinstance(item, dict):
+                raise ValueError("--constraints-file array entries must be JSON objects")
+            constraints.append(item)
+        return constraints
+    if isinstance(payload, dict):
+        maybe_constraints = payload.get("constraints")
+        if not isinstance(maybe_constraints, list):
+            raise ValueError("--constraints-file object must contain a constraints array")
+        for item in maybe_constraints:
+            if not isinstance(item, dict):
+                raise ValueError("--constraints-file constraints entries must be JSON objects")
+            constraints.append(item)
+        return constraints
+    raise ValueError("--constraints-file must contain a JSON array or object")
+
+
+def resolve_solve_command_outputs(
+    name: str | None,
+    out_dir: Path,
+    macro_out: Path | None,
+    exact_input_out: Path | None,
+    exact_out: Path | None,
+) -> tuple[Path, Path | None, Path | None]:
+    if name is not None:
+        stem = output_stem(name)
+        if macro_out is None:
+            macro_out = out_dir / f"{stem}_macro.csv"
+        if exact_input_out is None:
+            exact_input_out = out_dir / f"{stem}_exact_input.json"
+        if exact_out is None:
+            exact_out = out_dir / f"{stem}_exact_solution.json"
+    if macro_out is None:
+        raise ValueError("solve-command requires --macro-out, or provide --name for auto output filenames")
+    return macro_out, exact_input_out, exact_out
+
+
+def output_stem(name: str) -> str:
+    trimmed = name.strip()
+    if not trimmed:
+        raise ValueError("--name must not be blank")
+    return re.sub(r"[^A-Za-z0-9._-]+", "_", trimmed)
 
 
 def with_constraint_tolerance(problem: dict[str, Any], tolerance: float, *, fill_missing: bool) -> dict[str, Any]:
@@ -286,12 +384,7 @@ def materialize_mathematica_problem(problem: dict[str, Any]) -> dict[str, Any]:
     materialized = copy.deepcopy(problem)
     rendered_constraints: list[dict[str, str]] = []
     for constraint in materialized.get("constraints", []):
-        if "expression" in constraint:
-            rendered_constraints.append({"id": str(constraint["id"]), "expression": str(constraint["expression"])})
-        elif constraint.get("type") == "position_bounds":
-            rendered_constraints.extend(render_position_bounds_constraint(constraint))
-        else:
-            raise ValueError(f"unsupported Mathematica constraint shape: {constraint!r}")
+        rendered_constraints.extend(render_mathematica_constraint(constraint))
     materialized["constraints"] = rendered_constraints
     return materialized
 
@@ -364,6 +457,29 @@ def build_exact_solver_input(
     solution_tolerance: float,
 ) -> dict[str, Any]:
     exact_input = copy.deepcopy(exact_template)
+    exact_supported_types = {
+        "position_bounds",
+        "position_delta_bound",
+        "position_delta_offset_bound",
+        "facing_degrees_equal",
+    }
+    supported_constraints: list[dict[str, Any]] = []
+    skipped_constraints: list[dict[str, Any]] = []
+    for constraint in exact_input.get("constraints", []):
+        constraint_type = constraint.get("type")
+        if constraint_type in exact_supported_types:
+            supported_constraints.append(constraint)
+        else:
+            skipped_constraints.append(constraint)
+    exact_input["constraints"] = supported_constraints
+    if skipped_constraints:
+        exact_input.setdefault("annotations", []).append(
+            {
+                "kind": "unsupported_exact_constraints",
+                "reason": "constraints used for Mathematica but skipped by exact solver",
+                "constraints": skipped_constraints,
+            }
+        )
     exact_input["optimal_solution"] = {
         "status": relaxed_solution.get("status", "optimal"),
         "objective_value": relaxed_solution["objective_value"],

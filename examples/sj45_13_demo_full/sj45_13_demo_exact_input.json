@@ -1,0 +1,469 @@
+{
+  "version": 1,
+  "name": "sj45_13_demo_full",
+  "slot_indexing": "1_based",
+  "n": 14,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "velocity": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": true
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      {
+        "slot": 1,
+        "kind": "init",
+        "speed": 0.23,
+        "imux": 0.91,
+        "imuz": 0.91
+      },
+      {
+        "slot": 2,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": true,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "ground",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "flat_ground"
+        }
+      },
+      {
+        "slot": 3,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 4,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 5,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 6,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 7,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 8,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 9,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 10,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 11,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 12,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 13,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 14,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      }
+    ]
+  },
+  "exact_objective": {
+    "type": "position",
+    "axis": "z",
+    "slot": 14,
+    "sense": "maximize",
+    "target_value": 4.4603327073774075,
+    "solution_tolerance": 0.001
+  },
+  "constraints": [
+    {
+      "id": "dz_bound",
+      "type": "position_delta_bound",
+      "axis": "z",
+      "lhs_slot": 14,
+      "rhs_slot": 0,
+      "sense": ">=",
+      "value": -1000
+    },
+    {
+      "id": "dx_off",
+      "type": "position_delta_offset_bound",
+      "axis": "x",
+      "lhs_slot": 14,
+      "rhs_slot": 0,
+      "sense": "<=",
+      "offset_symbol": "0",
+      "offset_value": 1000
+    },
+    {
+      "id": "face_soft",
+      "type": "facing_degrees_equal",
+      "slot": 2,
+      "degrees": 0.0,
+      "exact_tolerance_degrees": 180.0
+    }
+  ],
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 4.4603327073774075,
+    "movement_directions": [
+      {
+        "slot": 1,
+        "radians": -2.407412430484045e-35,
+        "degrees": 0.0
+      },
+      {
+        "slot": 2,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 3,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 4,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 5,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 6,
+        "radians": 4.81482486096809e-35,
+        "degrees": 0.0
+      },
+      {
+        "slot": 7,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 8,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 9,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 10,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 11,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 12,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 13,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 14,
+        "radians": 0.0,
+        "degrees": 0.0
+      }
+    ],
+    "points": [
+      {
+        "slot": 0,
+        "x": 0.0,
+        "z": 0.0
+      },
+      {
+        "slot": 1,
+        "x": -5.537048590113303e-36,
+        "z": 0.23
+      },
+      {
+        "slot": 2,
+        "x": -1.0575762807116411e-35,
+        "z": 0.766699986183643
+      },
+      {
+        "slot": 3,
+        "x": -1.3326901089152045e-35,
+        "z": 1.0857382113508687
+      },
+      {
+        "slot": 4,
+        "x": -1.5830436997955947e-35,
+        "z": 1.402063003293951
+      },
+      {
+        "slot": 5,
+        "x": -1.8108654740625338e-35,
+        "z": 1.7159185709319007
+      },
+      {
+        "slot": 6,
+        "x": -1.8929978546205794e-35,
+        "z": 2.0275271443874217
+      },
+      {
+        "slot": 7,
+        "x": -1.9677383230824076e-35,
+        "z": 2.3370909530780017
+      },
+      {
+        "slot": 8,
+        "x": -2.0357521513428184e-35,
+        "z": 2.6447940257788605
+      },
+      {
+        "slot": 9,
+        "x": -2.0976447368435254e-35,
+        "z": 2.950803828680273
+      },
+      {
+        "slot": 10,
+        "x": -2.153966991272367e-35,
+        "z": 3.2552727560197816
+      },
+      {
+        "slot": 11,
+        "x": -2.2052202442797224e-35,
+        "z": 3.5583394865575464
+      },
+      {
+        "slot": 12,
+        "x": -2.2518607058605857e-35,
+        "z": 3.8601302179689503
+      },
+      {
+        "slot": 13,
+        "x": -2.2943035271223668e-35,
+        "z": 4.160759790141901
+      },
+      {
+        "slot": 14,
+        "x": -2.332926495583694e-35,
+        "z": 4.4603327073774075
+      }
+    ],
+    "diagnostics": {
+      "name": "sj45_13_demo_full",
+      "sense": "maximize",
+      "component_override_count": 0,
+      "inertia_event_count": 0,
+      "stage": "relaxed",
+      "strict_objective_value": 4.4603327073774075,
+      "objective_deviation": 0.0
+    }
+  }
+}

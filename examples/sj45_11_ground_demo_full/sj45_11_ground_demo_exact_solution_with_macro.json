@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "status": "solved",
+  "angles_discrete": [
+    { "tick": 0, "yaw_index": 54020, "pitch_index": 0, "yaw_degrees": 296.74072265625, "pitch_degrees": 0 },
+    { "tick": 1, "yaw_index": 65076, "pitch_index": 0, "yaw_degrees": 357.47314453125, "pitch_degrees": 0 },
+    { "tick": 2, "yaw_index": 18140, "pitch_index": 0, "yaw_degrees": 99.64599609375, "pitch_degrees": 0 },
+    { "tick": 3, "yaw_index": 20983, "pitch_index": 0, "yaw_degrees": 115.2630615234375, "pitch_degrees": 0 },
+    { "tick": 4, "yaw_index": 22467, "pitch_index": 0, "yaw_degrees": 123.4149169921875, "pitch_degrees": 0 },
+    { "tick": 5, "yaw_index": 23334, "pitch_index": 0, "yaw_degrees": 128.177490234375, "pitch_degrees": 0 },
+    { "tick": 6, "yaw_index": 23899, "pitch_index": 0, "yaw_degrees": 131.2811279296875, "pitch_degrees": 0 },
+    { "tick": 7, "yaw_index": 24293, "pitch_index": 0, "yaw_degrees": 133.4454345703125, "pitch_degrees": 0 },
+    { "tick": 8, "yaw_index": 24576, "pitch_index": 0, "yaw_degrees": 135, "pitch_degrees": 0 },
+    { "tick": 9, "yaw_index": 24576, "pitch_index": 0, "yaw_degrees": 135, "pitch_degrees": 0 },
+    { "tick": 10, "yaw_index": 24576, "pitch_index": 0, "yaw_degrees": 135, "pitch_degrees": 0 },
+    { "tick": 11, "yaw_index": 24576, "pitch_index": 0, "yaw_degrees": 135, "pitch_degrees": 0 }
+  ],
+  "states_exact": [
+    { "tick": 0, "position": { "x": "0", "y": "0", "z": "0" }, "velocity": { "x": "0", "y": "0", "z": "0" }, "retained_velocity": { "x": "0", "z": "0" }, "on_ground": false },
+    { "tick": 1, "position": { "x": "0.2768460616368293", "y": "0", "z": "0.13948569158224414" }, "velocity": { "x": "0.2768460616368293", "y": "0", "z": "0.13948569158224414" }, "retained_velocity": { "x": "0.15115796721110386", "z": "0.07615919644999608" }, "on_ground": false },
+    { "tick": 2, "position": { "x": "0.4424383250200454", "y": "0", "z": "0.5427265385277694" }, "velocity": { "x": "0.1655922633832161", "y": "0", "z": "0.40324084694552526" }, "retained_velocity": { "x": "0.09041338630898837", "z": "0.220169528005526" }, "on_ground": false },
+    { "tick": 3, "position": { "x": "0.5116463046930341", "y": "0", "z": "0.7779403580370229" }, "velocity": { "x": "0.0692079796729887", "y": "0", "z": "0.23521381950925344" }, "retained_velocity": { "x": "0.06297926331747121", "z": "0.21404458192214854" }, "on_ground": false },
+    { "tick": 4, "position": { "x": "0.5501529923757873", "y": "0", "z": "1.0007651949415832" }, "velocity": { "x": "0.03850668768275327", "y": "0", "z": "0.2228248369045604" }, "retained_velocity": { "x": "0.03504108680118355", "z": "0.20277060742696387" }, "on_ground": false },
+    { "tick": 5, "position": { "x": "0.5597237627669062", "y": "0", "z": "1.208757196259226" }, "velocity": { "x": "0.009570770391118852", "y": "0", "z": "0.20799200131764276" }, "retained_velocity": { "x": "0.008709401306921598", "z": "0.18927272665386222" }, "on_ground": false },
+    { "tick": 6, "position": { "x": "0.5426172729718713", "y": "0", "z": "1.4011185685501237" }, "velocity": { "x": "-0.01710648979503477", "y": "0", "z": "0.1923613722908976" }, "retained_velocity": { "x": "-0.01556690616211719", "z": "0.17504885382959456" }, "on_ground": false },
+    { "tick": 7, "position": { "x": "0.5011051168648288", "y": "0", "z": "1.5778538091437677" }, "velocity": { "x": "-0.041512156107042494", "y": "0", "z": "0.1767352405936441" }, "retained_velocity": { "x": "-0.03777606314610829", "z": "0.16082907357528226" }, "on_ground": false },
+    { "tick": 8, "position": { "x": "0.4373386271783458", "y": "0", "z": "1.7393882357034187" }, "velocity": { "x": "-0.06376648968648305", "y": "0", "z": "0.16153442655965106" }, "retained_velocity": { "x": "-0.05802750728704232", "z": "0.1469963324056914" }, "on_ground": false },
+    { "tick": 9, "position": { "x": "0.35331112121750685", "y": "0", "z": "1.88638456810911" }, "velocity": { "x": "-0.08402750596083897", "y": "0", "z": "0.1469963324056914" }, "retained_velocity": { "x": "-0.0764650326280725", "z": "0.13376666634431142" }, "on_ground": false },
+    { "tick": 10, "position": { "x": "0.2508460899156377", "y": "0", "z": "2.0201512344534214" }, "velocity": { "x": "-0.10246503130186915", "y": "0", "z": "0.13376666634431142" }, "retained_velocity": { "x": "-0.09324318117195332", "z": "0.12172766988149383" }, "on_ground": false },
+    { "tick": 11, "position": { "x": "0.13160291006988775", "y": "0", "z": "2.141878904334915" }, "velocity": { "x": "-0.11924317984574997", "y": "0", "z": "0.12172766988149383" }, "retained_velocity": { "x": "-0.10851129678690932", "z": "0.11077218278459458" }, "on_ground": false },
+    { "tick": 12, "position": { "x": "-0.0029083853908182244", "y": "0", "z": "2.2526510871195096" }, "velocity": { "x": "-0.13451129546070598", "y": "0", "z": "0.11077218278459458" }, "retained_velocity": { "x": "-0.12240528239694155", "z": "0.10080268923909717" }, "on_ground": false }
+  ],
+  "macro_rows": [
+    { "w": false, "a": false, "s": false, "d": false, "p": false, "n": false, "j": false, "yaw": -63.25927734375, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": false, "s": false, "d": false, "p": true, "n": false, "j": true, "yaw": 60.732421875, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 102.1728515625, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 15.6170654296875, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 8.15185546875, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 4.7625732421875, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 3.1036376953125, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 2.164306640625, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 1.5545654296875, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
+    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 }
+  ],
+  "derived_model": { "imux": [0.546000063419342, 0.546000063419342, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437], "imuz": [0.546000063419342, 0.546000063419342, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437], "mmu": [0.31, 0.12999998033046722, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654] },
+  "diagnostics": { "mode": "exact_solver_input_v1", "state_count": 13, "initial_residual_norm": "0", "final_residual_norm": "0", "worst_constraint_id": "", "candidate_evaluations": 0, "repair_iterations": 0, "exact_objective_value": "-0.0029083853908182244", "objective_deviation": "7.959594989740901e-05", "changed_angle_indices": [] }
+}

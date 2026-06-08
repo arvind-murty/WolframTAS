@@ -9,7 +9,7 @@ Current priority order:
    selected Mathematica movement directions.
 3. Document the existing external macro-tool CSV output format.
 4. Harden the staged Python orchestrator flow from an exact-input template to
-   strict Mathematica, relaxed Mathematica, and C++ exact solving.
+   strict Mathematica, relaxed Mathematica, and Python solver.
 5. Return to Forge mod GUI/in-game quality-of-life features later.
 
 The first two contracts now have v1 low-level schemas:
@@ -143,7 +143,7 @@ python3 -m wolframtas_orchestrator examples/simple_jump/request.json \
 ## Staged Exact Flow
 
 For current input-first fixtures, the orchestrator can run the two-pass
-Mathematica flow and hand the relaxed solution to the C++ exact solver:
+Mathematica flow and hand the relaxed solution to the Python solver:
 
 ```sh
 PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator solve-exact-input \
@@ -152,7 +152,7 @@ PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator solve-exact-input \
   --relaxed-out /tmp/wolframtas_relaxed.json \
   --exact-input-out /tmp/wolframtas_exact_input.json \
   --exact-out /tmp/wolframtas_exact.json \
-  --solver-command solver/build/wolframtas_solver
+  
 ```
 
 This command derives Mathematica `Imux`/`Imuz`/`Mmu` arrays from
@@ -161,27 +161,15 @@ expressions, solves strict constraints first, solves relaxed constraints second,
 checks relaxed objective drift against `solution_tolerance`, then invokes the
 exact solver with the relaxed movement directions.
 
-## C++ Solver
+## Python Solver
 
-The solver is a small CLI that reads exact-solver input JSON from stdin,
-simulates the horizontal movement model, and writes exact solution JSON to
-stdout. Exact-solver inputs provide `movement_plan`; the solver derives
-supported `Imux`/`Imuz`/`Mmu` values from that semantic input. It keeps movement directions in
-radians internally, applies
-Minecraft-style float32 angle indexing for `mcsin`/`mccos`, computes the indexed
-sine value with `std::sin` on demand, and converts to degrees only for
-diagnostics and macro-relative yaw output.
+`orchestrator/wolframtas_orchestrator/python_solver.py` drives mothball's
+`Player.move()` directly for each movement slot. Usage:
 
-The current reduced horizontal recurrence is checked against the anon-noob
-mothball `player.py` behavior with the flat sprintjump no-45 fixture.
-
-```sh
-cmake -S solver -B solver/build
-cmake --build solver/build
-ctest --test-dir solver/build --output-on-failure
-solver/build/wolframtas_solver < examples/simple_jump/flat_sprintjump_exact_solver_input.json
-solver/build/wolframtas_solver --macro-csv-out /tmp/wolframtas_macro.csv \
-  < examples/simple_jump/flat_sprintjump_exact_solver_input.json
+```python
+from wolframtas_orchestrator.python_solver import solve, write_macro_csv
+solution = solve(exact_input_dict)
+write_macro_csv(Path("/tmp/macro.csv"), solution)
 ```
 
 ## Tests
@@ -194,11 +182,9 @@ Run unit/component tests without real Wolfram:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator .venv-oracle/bin/python -B -m pytest orchestrator/tests
-ctest --test-dir solver/build --output-on-failure
 ```
 
-Run no-mock end-to-end tests separately. These call the real `wolframscript`
-and the built C++ solver, and import the vendored numpy-1.26 mothball oracle:
+Run no-mock end-to-end tests (real `wolframscript` + mothball oracle):
 
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python -m pytest e2e

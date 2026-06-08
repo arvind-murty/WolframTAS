@@ -59,7 +59,7 @@ The request schema now mirrors the staged pipeline rather than the old generic
 ## Movement Plan
 
 Produced by a user-authored file, future mod UI, or route builder. Consumed by
-the Python orchestrator and the C++ exact solver.
+the Python orchestrator and the Python solver.
 
 Schema: `schemas/movement_plan.schema.json`
 
@@ -120,7 +120,7 @@ Expected role:
 
 ## Exact Solver Input
 
-Produced by the Python orchestrator. Consumed by the C++ exact solver.
+Produced by the Python orchestrator. Consumed by the Python solver.
 
 Schema: `schemas/exact_solver_input.schema.json`
 
@@ -185,7 +185,7 @@ Exact-solver numeric policy:
 
 ## Macro CSV
 
-Produced by the C++ exact solver.
+Produced by the Python solver.
 
 Schema notes: `schemas/macro_csv.md`
 

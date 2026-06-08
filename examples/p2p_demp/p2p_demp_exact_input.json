@@ -1,0 +1,414 @@
+{
+  "version": 1,
+  "name": "p2p_demp",
+  "slot_indexing": "1_based",
+  "n": 12,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "velocity": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": true
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      {
+        "slot": 1,
+        "kind": "init",
+        "speed": 0.31,
+        "imux": 0.546000063419342,
+        "imuz": 0.546000063419342
+      },
+      {
+        "slot": 2,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": true,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "ground",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "flat_ground"
+        }
+      },
+      {
+        "slot": 3,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 4,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 5,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 6,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 7,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 8,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 9,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 10,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 11,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 12,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 1,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "forward_45"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      }
+    ]
+  },
+  "exact_objective": {
+    "type": "position",
+    "axis": "x",
+    "slot": 12,
+    "sense": "minimize",
+    "target_value": -0.0025524841982076663,
+    "solution_tolerance": 0.001
+  },
+  "constraints": [
+    {
+      "id": "x_2_0_min",
+      "type": "position_delta_bound",
+      "axis": "x",
+      "lhs_slot": 2,
+      "rhs_slot": 0,
+      "sense": ">=",
+      "value": 0.4375
+    },
+    {
+      "id": "x_8_0_min",
+      "type": "position_delta_bound",
+      "axis": "x",
+      "lhs_slot": 8,
+      "rhs_slot": 0,
+      "sense": ">=",
+      "value": 0.4375
+    },
+    {
+      "id": "z_8_1_min",
+      "type": "position_delta_bound",
+      "axis": "z",
+      "lhs_slot": 8,
+      "rhs_slot": 1,
+      "sense": ">=",
+      "value": 1.6
+    }
+  ],
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": -0.0025524841982076663,
+    "movement_directions": [
+      {
+        "slot": 1,
+        "radians": 1.1042781898043799,
+        "degrees": 63.27047968413743
+      },
+      {
+        "slot": 2,
+        "radians": 0.044107528096570744,
+        "degrees": 2.5271752046882057
+      },
+      {
+        "slot": 3,
+        "radians": -0.9517321438120826,
+        "degrees": -54.53023506737024
+      },
+      {
+        "slot": 4,
+        "radians": -13.792171964098403,
+        "degrees": -70.23324386149761
+      },
+      {
+        "slot": 5,
+        "radians": -7.651325896489809,
+        "degrees": -78.38868154801702
+      },
+      {
+        "slot": 6,
+        "radians": -1.4517559054878986,
+        "degrees": -83.17948626764982
+      },
+      {
+        "slot": 7,
+        "radians": -20.355424107457182,
+        "degrees": -86.27989155614728
+      },
+      {
+        "slot": 8,
+        "radians": -39.24251782278964,
+        "degrees": -88.43064871275828
+      },
+      {
+        "slot": 9,
+        "radians": -1.570796326982675,
+        "degrees": -90.00000001075891
+      },
+      {
+        "slot": 10,
+        "radians": -1.5707963270060734,
+        "degrees": -90.00000001209955
+      },
+      {
+        "slot": 11,
+        "radians": -1.5707963270455947,
+        "degrees": -90.00000001436395
+      },
+      {
+        "slot": 12,
+        "radians": -259.18139392115796,
+        "degrees": -90.00000000000182
+      }
+    ],
+    "points": [
+      {
+        "slot": 0,
+        "x": 0.0,
+        "z": 0.0
+      },
+      {
+        "slot": 1,
+        "x": 0.2768733282700388,
+        "z": 0.13943156060473294
+      },
+      {
+        "slot": 2,
+        "x": 0.4424823052412335,
+        "z": 0.5426427652637364
+      },
+      {
+        "slot": 3,
+        "x": 0.5117298503377227,
+        "z": 0.7778832126972244
+      },
+      {
+        "slot": 4,
+        "x": 0.5502771135048956,
+        "z": 1.0007450162897351
+      },
+      {
+        "slot": 5,
+        "x": 0.5598872020708683,
+        "z": 1.208782320230523
+      },
+      {
+        "slot": 6,
+        "x": 0.5428163848818481,
+        "z": 1.4011840184471174
+      },
+      {
+        "slot": 7,
+        "x": 0.5013367264906603,
+        "z": 1.5779565145977128
+      },
+      {
+        "slot": 8,
+        "x": 0.4375999899872757,
+        "z": 1.7395315506759104
+      },
+      {
+        "slot": 9,
+        "x": 0.3535995594238365,
+        "z": 1.886564837739662
+      },
+      {
+        "slot": 10,
+        "x": 0.2511591667343112,
+        "z": 2.0203651328182866
+      },
+      {
+        "slot": 11,
+        "x": 0.1319384080264403,
+        "z": 2.14212340484237
+      },
+      {
+        "slot": 12,
+        "x": -0.0025524841982076663,
+        "z": 2.2529234355775225
+      }
+    ],
+    "diagnostics": {
+      "name": "p2p_demp",
+      "sense": "minimize",
+      "component_override_count": 0,
+      "inertia_event_count": 0,
+      "stage": "relaxed",
+      "strict_objective_value": -0.0026906000032801136,
+      "objective_deviation": 0.00013811580507244736
+    }
+  }
+}

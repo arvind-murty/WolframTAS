@@ -159,6 +159,16 @@
       "additionalProperties": false
     },
     "exact_constraint": {
+      "oneOf": [
+        { "$ref": "#/$defs/position_bounds_constraint" },
+        { "$ref": "#/$defs/position_delta_bound_constraint" },
+        { "$ref": "#/$defs/position_delta_offset_bound_constraint" },
+        { "$ref": "#/$defs/facing_degrees_equal_constraint" },
+        { "$ref": "#/$defs/expression_constraint" },
+        { "$ref": "#/$defs/legacy_expression_constraint" }
+      ]
+    },
+    "position_bounds_constraint": {
       "type": "object",
       "required": ["id", "type", "slot"],
       "properties": {
@@ -171,6 +181,76 @@
         "max_z": { "type": "number" },
         "mathematica_tolerance": { "type": "number", "minimum": 0 },
         "exact_tolerance": { "type": "number", "minimum": 0 },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "position_delta_bound_constraint": {
+      "type": "object",
+      "required": ["id", "type", "axis", "lhs_slot", "rhs_slot", "sense", "value"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["position_delta_bound"] },
+        "axis": { "type": "string", "enum": ["x", "z"] },
+        "lhs_slot": { "type": "integer", "minimum": 0 },
+        "rhs_slot": { "type": "integer", "minimum": 0 },
+        "sense": { "type": "string", "enum": [">=", "<="] },
+        "value": { "type": "number" },
+        "mathematica_tolerance": { "type": "number", "minimum": 0 },
+        "exact_tolerance": { "type": "number", "minimum": 0 },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "position_delta_offset_bound_constraint": {
+      "type": "object",
+      "required": ["id", "type", "axis", "lhs_slot", "rhs_slot", "sense", "offset_symbol"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["position_delta_offset_bound"] },
+        "axis": { "type": "string", "enum": ["x", "z"] },
+        "lhs_slot": { "type": "integer", "minimum": 0 },
+        "rhs_slot": { "type": "integer", "minimum": 0 },
+        "sense": { "type": "string", "enum": [">=", "<="] },
+        "offset_symbol": { "type": "string", "minLength": 1 },
+        "offset_value": { "type": "number" },
+        "mathematica_tolerance": { "type": "number", "minimum": 0 },
+        "exact_tolerance": { "type": "number", "minimum": 0 },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "facing_degrees_equal_constraint": {
+      "type": "object",
+      "required": ["id", "type", "slot", "degrees"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["facing_degrees_equal"] },
+        "slot": { "type": "integer", "minimum": 1 },
+        "degrees": { "type": "number" },
+        "mathematica_tolerance_degrees": { "type": "number", "minimum": 0 },
+        "exact_tolerance_degrees": { "type": "number", "minimum": 0 },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "expression_constraint": {
+      "type": "object",
+      "required": ["id", "type", "expression"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "enum": ["expression"] },
+        "expression": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "legacy_expression_constraint": {
+      "type": "object",
+      "required": ["id", "expression"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "expression": { "type": "string", "minLength": 1 },
         "reason": { "type": "string" }
       },
       "additionalProperties": false

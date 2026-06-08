@@ -16,9 +16,9 @@ recommended implementation queue, read `docs/next-tasks.md`.
    and can run the canonical Wolfram optimizer.
 3. Mathematica emits approximate movement-direction angles as JSON.
 4. Python combines fixed movement-plan inputs with Mathematica angles and passes
-   them to the C++ exact solver.
-5. C++ produces exact solution JSON and can write macro CSV with
-   `--macro-csv-out`.
+   them to the Python solver.
+5. Python solver (`python_solver.py`) drives mothball directly, produces
+   exact solution JSON and macro CSV.
 
 The Forge mod is a later quality-of-life client for creating problem
 definitions, starting the orchestrator, and optionally rendering results. Do not
@@ -64,40 +64,40 @@ let mod concerns drive the core contracts.
   and Mathematica's selected `optimal_solution.movement_directions`. Low-level
   `Imux`, `Imuz`, and `Mmu` arrays belong in generated/debug `derived_model`
   data or legacy fixtures, not new hand-authored exact-solver inputs.
-- The C++ solver consumes exact-solver input JSON on stdin, derives supported
+- The Python solver consumes exact-solver input JSON on stdin, derives supported
   forward-only movement values from `movement_plan`, and simulates from the
   selected movement direction.
 - The imu (retention) and mmu (base movement) constants have a SINGLE source of
   truth: `tools/gen_movement_constants.py` computes them in numpy float32 and
   emits `orchestrator/wolframtas_orchestrator/movement_constants.json` (read by
-  the orchestrator) and `solver/include/wolframtas/movement_constants_generated.hpp`
-  (a `constexpr` table compiled into the solver). Both committed artifacts are
-  generated; regenerate with the tool (numpy 1.26) after any constant change and
-  rebuild the solver. Do not re-derive these constants inline in either component.
-- Exact solver angle handling: keep Mathematica movement directions in radians
-  internally and flip sign to get Minecraft yaw radians. Apply Minecraft-style
-  float32 angle indexing for `mcsin`/`mccos`
-  (`(int)(value * 10430.378F)` and cosine `+ 16384.0F`, masked with `65535`),
-  but compute the indexed sine value with `std::sin` on demand instead of
-  caching a 65536-float table. Convert to degrees only for exact-solution
-  diagnostics and macro-relative yaw output.
-- Exact solver horizontal state currently uses double/float64 `x`, `z`, `vx`,
-  and `vz` to match anon-noob mothball `player.py` under NumPy 1.26 scalar
-  promotion. Movement-plan inputs derive acceleration/retention through the
-  same float32 movement-intermediate paths before simulation.
-- Exact solver v1 supports fixed water/lava acceleration and retention for
-  no-45/45 forward inputs, explicit `wall_hit.axes` retention cancellation, and
-  inertia hit/avoid residual checks against post-retention velocity before the
-  normal `0.005` threshold zeroing.
+  the orchestrator and Python solver). Regenerate with the tool (numpy 1.26)
+  after any constant change. Do not re-derive these constants inline.
+- Python solver angle handling: convert Mathematica movement directions to facing
+  angle (degrees) via `facing = -degrees(mv_rad_normalized) + degrees(atan2(strafe, forward))`,
+  pass to mothball as `rotation`. Mothball applies Minecraft's float32 angle
+  indexing (`(int)(value * 10430.378F) & 65535`) natively. Macro yaw uses
+  midpoint-of-bucket formula `(yaw_idx + 0.5) * 360/65536` for float32 tolerance.
+- Minecraft has NO angle normalization. The movement pipeline uses raw float32
+  truncation (`(int)(value * 10430.378F) & 65535`) with no modulo or remainder.
+  mothball matches Minecraft exactly and is the source of truth for all angle
+  and movement physics. Never apply `std::remainder` or any wrap to angles
+  originating from Minecraft's system. It IS acceptable to normalize Mathematica
+  output angles before the float32 cast (e.g. in `python_solver.py`) because
+  Mathematica can emit unwrapped values like -6390° meaning 90°; this normalizes
+  the optimizer output, not a Minecraft value.
+- The Python solver uses mothball's `Player.move()` natively for all movement
+  physics. Position, velocity, and retention all follow mothball's float32
+  semantics (numpy 1.26). All mediums, sneak, sprint, ladder, web, wall_hit,
+  and wall_collision are handled directly by mothball.
 - Macro CSV details are documented in `schemas/macro_csv.md`. The external
   format columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`; yaw and pitch are
-  relative degree deltas, not absolute angles. The C++ solver writes the CSV
-  with `--macro-csv-out`.
+  relative degree deltas, not absolute angles. `python_solver.write_macro_csv()`
+  writes the CSV.
 - Python has a first staged exact handoff command:
   `python3 -m wolframtas_orchestrator solve-exact-input ...`. It derives
   Mathematica arrays from `movement_plan`, runs strict and relaxed Mathematica
   solves, checks objective drift, writes the generated exact input, and invokes
-  the C++ exact solver.
+  the Python solver.
 - Zero-relaxed-tolerance semantics for `solve-exact-input`: when
   `default_relaxed_tolerance == 0.0`, the relaxed Wolfram run is skipped and
   `--relaxed-out` is written as a verbatim copy of strict Mathematica output
@@ -143,7 +143,7 @@ let mod concerns drive the core contracts.
   `wolframscript -file mathematica/optimize.wls examples/simple_jump/inertia_mathematica_input.json`
 - Run orchestrator tests (use `.venv-oracle`; see docs/current-status.md Toolchain):
   `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator .venv-oracle/bin/python -B -m pytest orchestrator/tests`
-- Run no-mock end-to-end tests with real Wolfram and the built C++ solver:
+- Run no-mock end-to-end tests with real Wolfram and the built Python solver:
   `PYTHONPATH=orchestrator .venv-oracle/bin/python -m pytest e2e`
 
 ## Current Fixtures
@@ -175,7 +175,7 @@ let mod concerns drive the core contracts.
   speed contribution with explicit `speed`, `imux`, and `imuz`; it is not
   validated against keyboard movement. The speed is used as the first `Mmu`
   entry, and the direction is represented by the first movement-direction angle.
-  The exact solver decomposes init speed with ordinary `std::sin`/`std::cos`,
+  The exact solver decomposes init speed with Python `math.sin`/`math.cos`,
   not Minecraft `mcsin`/`mccos`.
 - Air drag is `0.91`. Flat normal-ground drag after a ground tick is
   `0.91 * 0.6 = 0.546`. Water drag is `0.8`.
@@ -276,9 +276,9 @@ let mod concerns drive the core contracts.
   tick to `+/-0.15` and set the corresponding `Imux[[tick]]` or `Imuz[[tick]]`
   to `0` to cancel prior momentum on that axis.
 - The sign of the ladder override matters and should match the clamped movement
-  direction. The exact ladder clamp belongs in the C++ exact solver; Mathematica
+  direction. The exact ladder clamp belongs in the Python solver; Mathematica
   uses this fixed-tick approximation to preserve the closed-form model.
-- The C++ exact solver now implements the ladder clamp directly: a slot with
+- The Python solver now implements the ladder clamp directly: a slot with
   `"ladder": true` clamps `vx`/`vz` to `[-0.15, 0.15]` at the Minecraft point
   (after acceleration, before the position move). Validated bit-exact vs mothball.
 - Cobweb: a slot with `"web": true` cuts motion to 1/4 that tick (at the same
@@ -318,7 +318,7 @@ let mod concerns drive the core contracts.
   precision, breaking the exact cancellation that makes a symmetric 45 input
   produce zero perpendicular drift. Keep this flag for bit-exact float32 parity.
 - mothball and Minecraft match EXACTLY; mothball just reports position one tick
-  before the final (velocity is tick N-1 -> N). The C++ solver uses real-MC tick
+  before the final (velocity is tick N-1 -> N). The Python solver uses real-MC tick
   order (accel -> move -> drag) and reproduces mothball when initial conditions
   correspond. When validating against mothball, build velocity from rest; do NOT
   seed a raw velocity (it bypasses mothball's clamp/drag and gives a false

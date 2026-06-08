@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "name": "repair-budget-exhausted",
+  "slot_indexing": "1_based",
+  "n": 2,
+  "angle_domain": { "table_size": 65536 },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 }
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      { "slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91 },
+      {
+        "slot": 2,
+        "kind": "movement",
+        "controls": { "forward": 1, "strafe": 0, "jump": true, "sneak": false, "sprint": true },
+        "acceleration": { "medium": "ground", "input": "no45_forward" },
+        "retention": { "medium": "flat_ground" }
+      }
+    ]
+  },
+  "constraints": [
+    {
+      "id": "needs_small_positive_x",
+      "type": "position_bounds",
+      "slot": 2,
+      "min_x": 0.00002,
+      "exact_tolerance": 0.0
+    }
+  ],
+  "exact_objective": {
+    "type": "position",
+    "axis": "z",
+    "slot": 2,
+    "solution_tolerance": 0.001
+  },
+  "exact_solver": {
+    "max_repair_iterations": 1,
+    "max_candidate_evaluations": 0,
+    "top_k_moves": 4
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.32739998400211334,
+    "movement_directions": [
+      { "slot": 1, "radians": 0.0 },
+      { "slot": 2, "radians": 0.0 }
+    ]
+  }
+}

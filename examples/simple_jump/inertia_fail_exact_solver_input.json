@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "name": "inertia-fail",
+  "slot_indexing": "1_based",
+  "n": 1,
+  "angle_domain": { "table_size": 65536 },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 }
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      { "slot": 1, "kind": "init", "speed": 0.01, "imux": 0.91, "imuz": 0.91 }
+    ]
+  },
+  "inertia_events": [
+    { "id": "hit_z", "type": "hit", "axis": "z", "slot": 1, "threshold": 0.005 }
+  ],
+  "exact_solver": {
+    "max_repair_iterations": 1,
+    "max_candidate_evaluations": 10,
+    "top_k_moves": 2
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.0,
+    "movement_directions": [
+      { "slot": 1, "radians": 0.0 }
+    ]
+  }
+}

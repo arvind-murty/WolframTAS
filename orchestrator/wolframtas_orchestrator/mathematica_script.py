@@ -100,18 +100,28 @@ def render_mathematica_script(problem: dict[str, Any], *, source_name: str | Non
 def render_constraints(problem: dict[str, Any]) -> list[dict[str, str]]:
     constraints: list[dict[str, str]] = []
     for constraint in problem.get("constraints", []):
-        if "expression" in constraint:
-            constraints.append({"id": str(constraint["id"]), "expression": str(constraint["expression"])})
-            continue
-        if constraint.get("type") == "position_bounds":
-            constraints.extend(render_position_bounds_constraint(constraint))
-            continue
-        raise ValueError(f"unsupported Mathematica constraint shape: {constraint!r}")
+        constraints.extend(render_mathematica_constraint(constraint))
 
     for event in problem.get("inertia_events", []):
         constraints.extend(render_inertia_event(event))
 
     return constraints
+
+
+def render_mathematica_constraint(constraint: dict[str, Any]) -> list[dict[str, str]]:
+    if "expression" in constraint and constraint.get("type", "expression") == "expression":
+        return [{"id": str(constraint["id"]), "expression": str(constraint["expression"])}]
+
+    constraint_type = constraint.get("type")
+    if constraint_type == "position_bounds":
+        return render_position_bounds_constraint(constraint)
+    if constraint_type == "position_delta_bound":
+        return render_position_delta_bound_constraint(constraint)
+    if constraint_type == "position_delta_offset_bound":
+        return render_position_delta_offset_bound_constraint(constraint)
+    if constraint_type == "facing_degrees_equal":
+        return render_facing_degrees_equal_constraint(constraint)
+    raise ValueError(f"unsupported Mathematica constraint shape: {constraint!r}")
 
 
 def render_position_bounds_constraint(constraint: dict[str, Any]) -> list[dict[str, str]]:
@@ -128,7 +138,7 @@ def render_position_bounds_constraint(constraint: dict[str, Any]) -> list[dict[s
         if key not in constraint:
             continue
         raw_value = wolfram_number(constraint[key])
-        value = f"({raw_value} - {tolerance})" if key.startswith("min_") else f"({raw_value} + {tolerance})"
+        value = f"({raw_value} + {tolerance})" if key.startswith("min_") else f"({raw_value} - {tolerance})"
         rendered.append(
             {
                 "id": f"{constraint_id}_{key}",
@@ -138,6 +148,77 @@ def render_position_bounds_constraint(constraint: dict[str, Any]) -> list[dict[s
     if not rendered:
         raise ValueError(f"position_bounds constraint has no bounds: {constraint_id}")
     return rendered
+
+
+def render_position_delta_bound_constraint(constraint: dict[str, Any]) -> list[dict[str, str]]:
+    constraint_id = str(constraint["id"])
+    axis = str(constraint["axis"])
+    lhs_slot = int(constraint["lhs_slot"])
+    rhs_slot = int(constraint["rhs_slot"])
+    sense = str(constraint["sense"])
+    value = float(constraint["value"])
+    tolerance = float(constraint.get("mathematica_tolerance", 0.0))
+    function = "X" if axis == "x" else "Z"
+    if axis not in ("x", "z"):
+        raise ValueError(f"position_delta_bound axis must be x or z: {constraint_id}")
+    if sense not in (">=", "<="):
+        raise ValueError(f"position_delta_bound sense must be >= or <=: {constraint_id}")
+    threshold = value + tolerance if sense == ">=" else value - tolerance
+    return [
+        {
+            "id": constraint_id,
+            "expression": (
+                f"{function}[F, {lhs_slot}] - {function}[F, {rhs_slot}] {sense} "
+                f"{wolfram_number(threshold)}"
+            ),
+        }
+    ]
+
+
+def render_position_delta_offset_bound_constraint(constraint: dict[str, Any]) -> list[dict[str, str]]:
+    constraint_id = str(constraint["id"])
+    axis = str(constraint["axis"])
+    lhs_slot = int(constraint["lhs_slot"])
+    rhs_slot = int(constraint["rhs_slot"])
+    sense = str(constraint["sense"])
+    offset_symbol = str(constraint["offset_symbol"])
+    offset_value = float(constraint.get("offset_value", 0.0))
+    tolerance = float(constraint.get("mathematica_tolerance", 0.0))
+    function = "X" if axis == "x" else "Z"
+    if axis not in ("x", "z"):
+        raise ValueError(f"position_delta_offset_bound axis must be x or z: {constraint_id}")
+    if sense not in (">=", "<="):
+        raise ValueError(f"position_delta_offset_bound sense must be >= or <=: {constraint_id}")
+    shifted = offset_value + tolerance if sense == ">=" else offset_value - tolerance
+    rhs = f"({offset_symbol} + {wolfram_number(shifted)})"
+    return [
+        {
+            "id": constraint_id,
+            "expression": f"{function}[F, {lhs_slot}] - {function}[F, {rhs_slot}] {sense} {rhs}",
+        }
+    ]
+
+
+def render_facing_degrees_equal_constraint(constraint: dict[str, Any]) -> list[dict[str, str]]:
+    constraint_id = str(constraint["id"])
+    slot = int(constraint["slot"])
+    degrees = float(constraint["degrees"])
+    tolerance_degrees = float(constraint.get("mathematica_tolerance_degrees", 0.0))
+    target = f"({wolfram_number(degrees)}*Pi/180)"
+    tolerance = max(tolerance_degrees, 0.0)
+    tolerance_radians = f"({wolfram_number(tolerance)}*Pi/180)"
+    lower = f"({target} - {tolerance_radians})"
+    upper = f"({target} + {tolerance_radians})"
+    return [
+        {
+            "id": f"{constraint_id}_min",
+            "expression": f"F[[{slot}]] >= {lower}",
+        },
+        {
+            "id": f"{constraint_id}_max",
+            "expression": f"F[[{slot}]] <= {upper}",
+        },
+    ]
 
 
 def render_inertia_event(event: dict[str, Any]) -> list[dict[str, str]]:

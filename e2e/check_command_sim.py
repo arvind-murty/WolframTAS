@@ -1,5 +1,5 @@
-"""Parse mothball command strings, run the WolframTAS C++ solver on each derived
-exact-solver input, and assert the result matches the vendored mothball
+"""Parse mothball command strings, run the WolframTAS Python solver on each
+derived exact-solver input, and assert the result matches the vendored mothball
 simulator. Run under the numpy-1.26 venv (it imports the vendored engine):
 
     PYTHONPATH=orchestrator .venv-oracle/bin/python e2e/check_command_sim.py
@@ -10,16 +10,13 @@ Exits 0 only if every command matches bit-exact. Used by test_command_parser.py.
 To add a test case, just add a mothball command string to DEFAULT_COMMANDS — the
 expected result is mothball's own simulation, so no hand-computed values needed.
 """
-import json
-import subprocess
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "orchestrator"))
 from wolframtas_orchestrator.command_parser import parse_command  # noqa: E402
-
-SOLVER = REPO / "solver/build/wolframtas_solver"
+from wolframtas_orchestrator.python_solver import solve as _solve  # noqa: E402
 
 DEFAULT_COMMANDS = [
     # ground walk / sprint / jumps
@@ -58,6 +55,8 @@ DEFAULT_COMMANDS = [
     # rotated mixed-axis wall collision regressions (short repros).
     "walk[hitz=0.01](1,30) walk(1,30)",
     "walk[hitx=-0.01](1,30) walk(1,30)",
+    # seeded velocity + explicit angled sprint-jump (state seeding parity)
+    "setvx(-0.269196777381033) sj(1, 3.7353515625)",
 ]
 
 
@@ -67,12 +66,8 @@ def check_one(command: str) -> str | None:
     exact_input = parsed["exact_input"]
     mothball = parsed["mothball_final"]
     n = exact_input["n"]
-    completed = subprocess.run(
-        [str(SOLVER)], input=json.dumps(exact_input), text=True, capture_output=True
-    )
-    if completed.returncode != 0:
-        return f"solver failed: {completed.stderr.strip()}"
-    states = json.loads(completed.stdout)["states_exact"]
+    solution = _solve(exact_input)
+    states = solution["states_exact"]
     # mothball reports position one tick before the final velocity; with the
     # leading init slot, position aligns at states[n-1] and velocity at
     # states[n]. Compare BOTH axes (z = travel, x = perpendicular drift) and

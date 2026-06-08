@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "name": "sj11_init0_demo",
+  "slot_indexing": "1_based",
+  "n": 12,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "velocity": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": true
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      {
+        "slot": 1,
+        "kind": "init",
+        "speed": 0.0,
+        "imux": 0.91,
+        "imuz": 0.91
+      },
+      {
+        "slot": 2,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": true,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "ground",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "flat_ground"
+        }
+      },
+      {
+        "slot": 3,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 4,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 5,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 6,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 7,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 8,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 9,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 10,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 11,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 12,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      }
+    ]
+  },
+  "exact_objective": {
+    "type": "position",
+    "axis": "z",
+    "slot": 12,
+    "sense": "maximize",
+    "expression": "Z[F,12]"
+  },
+  "constraints": []
+}

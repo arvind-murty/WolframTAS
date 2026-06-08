@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "name": "init-unsnapped-angle",
+  "slot_indexing": "1_based",
+  "n": 1,
+  "angle_domain": { "table_size": 65536 },
+  "initial_state": {
+    "position": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "velocity": { "x": 0.0, "y": 0.0, "z": 0.0 }
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      { "slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91 }
+    ]
+  },
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 0.0,
+    "movement_directions": [
+      { "slot": 1, "radians": -1.092941871064307 }
+    ]
+  }
+}

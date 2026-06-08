@@ -3,7 +3,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from wolframtas_orchestrator.cli import exact_template_to_mathematica_problem, main
+from wolframtas_orchestrator.cli import (
+    build_exact_solver_input,
+    exact_template_to_mathematica_problem,
+    main,
+    materialize_mathematica_problem,
+)
 
 
 def test_fixture_pipeline_writes_exact_solution(tmp_path: Path) -> None:
@@ -81,10 +86,10 @@ def test_render_mathematica_relaxes_typed_position_bounds(tmp_path: Path) -> Non
 
     assert exit_code == 0
     script = output.read_text(encoding="utf-8")
-    assert "X[F, 1] >= (0.00002 - 0.0001)" in script
+    assert "X[F, 1] >= (0.00002 + 0.0001)" in script
     assert "2e-05" not in script
-    assert "Z[F, 1] >= (1.0 - 0.0001)" in script
-    assert "Z[F, 1] <= (2.0 + 0.0001)" in script
+    assert "Z[F, 1] >= (1.0 + 0.0001)" in script
+    assert "Z[F, 1] <= (2.0 - 0.0001)" in script
 
 
 def test_run_mathematica_invokes_wolframscript_and_writes_json(tmp_path: Path) -> None:
@@ -184,7 +189,7 @@ def test_run_mathematica_staged_rejects_large_objective_drift(tmp_path: Path) ->
         "import json, sys\n"
         "problem = json.load(open(sys.argv[3]))\n"
         "expression = problem['constraints'][0]['expression']\n"
-        "objective = 1.0 if '- 0.0001' not in expression else 1.01\n"
+        "objective = 1.0 if '+ 0.0001' not in expression else 1.01\n"
         "print(json.dumps({'version': 1, 'status': 'optimal', 'objective_value': objective, 'movement_directions': []}))\n",
         encoding="utf-8",
     )
@@ -274,3 +279,319 @@ def test_solve_exact_input_runs_staged_math_and_exact_solver(tmp_path: Path) -> 
     assert relaxed["diagnostics"]["stage"] == "relaxed"
     assert exact_input["optimal_solution"]["objective_value"] == 2.0
     assert exact["status"] == "solved"
+
+
+def test_solve_exact_input_zero_relaxed_tolerance_skips_relaxed_and_copies_strict(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    strict_output = tmp_path / "strict.json"
+    relaxed_output = tmp_path / "relaxed.json"
+    exact_input_output = tmp_path / "exact_input.json"
+    exact_output = tmp_path / "exact.json"
+    call_counter = tmp_path / "wolfram_calls.txt"
+    call_counter.write_text("0", encoding="utf-8")
+    fake_wolframscript = tmp_path / "fake_wolframscript"
+    fake_solver = tmp_path / "fake_solver"
+
+    fake_wolframscript.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        f"counter = {str(call_counter)!r}\n"
+        "count = int(open(counter, 'r', encoding='utf-8').read())\n"
+        "open(counter, 'w', encoding='utf-8').write(str(count + 1))\n"
+        "problem = json.load(open(sys.argv[3]))\n"
+        "print(json.dumps({\n"
+        "  'version': 1,\n"
+        "  'status': 'optimal',\n"
+        "  'objective_value': 1.9995,\n"
+        "  'movement_directions': [{'slot': i + 1, 'radians': 0.0} for i in range(problem['n'])],\n"
+        "  'points': []\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+    fake_wolframscript.chmod(0o755)
+    fake_solver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "_payload = json.load(sys.stdin)\n"
+        "print(json.dumps({'version': 1, 'status': 'solved', 'diagnostics': {'source': 'fake'}}))\n",
+        encoding="utf-8",
+    )
+    fake_solver.chmod(0o755)
+
+    exit_code = main(
+        [
+            "solve-exact-input",
+            str(repo_root / "examples/simple_jump/repair_exact_solver_input.json"),
+            "--strict-out",
+            str(strict_output),
+            "--relaxed-out",
+            str(relaxed_output),
+            "--exact-input-out",
+            str(exact_input_output),
+            "--exact-out",
+            str(exact_output),
+            "--wolframscript",
+            str(fake_wolframscript),
+            "--solver-command",
+            str(fake_solver),
+            "--default-relaxed-tolerance",
+            "0.0",
+        ]
+    )
+
+    assert exit_code == 0
+    assert call_counter.read_text(encoding="utf-8") == "1"
+    exact_input = json.loads(exact_input_output.read_text(encoding="utf-8"))
+    assert exact_input["optimal_solution"]["objective_value"] == 1.9995
+    strict = json.loads(strict_output.read_text(encoding="utf-8"))
+    relaxed = json.loads(relaxed_output.read_text(encoding="utf-8"))
+    exact = json.loads(exact_output.read_text(encoding="utf-8"))
+    assert relaxed == strict
+    assert relaxed != exact
+
+
+def test_solve_command_accepts_custom_init_values(tmp_path: Path) -> None:
+    exact_input_output = tmp_path / "exact_input.json"
+    exact_output = tmp_path / "exact.json"
+    macro_output = tmp_path / "macro.csv"
+    fake_wolframscript = tmp_path / "fake_wolframscript"
+    fake_solver = tmp_path / "fake_solver"
+
+    fake_wolframscript.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "problem = json.load(open(sys.argv[3]))\n"
+        "print(json.dumps({\n"
+        "  'version': 1,\n"
+        "  'status': 'optimal',\n"
+        "  'objective_value': 1.0,\n"
+        "  'movement_directions': [{'slot': i + 1, 'radians': 0.0} for i in range(problem['n'])]\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+    fake_wolframscript.chmod(0o755)
+    fake_solver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "_payload = json.load(sys.stdin)\n"
+        "if '--macro-csv-out' in sys.argv:\n"
+        "    out_path = sys.argv[sys.argv.index('--macro-csv-out') + 1]\n"
+        "    open(out_path, 'w', encoding='utf-8').write('W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT\\n')\n"
+        "print(json.dumps({'version': 1, 'status': 'solved', 'diagnostics': {}}))\n",
+        encoding="utf-8",
+    )
+    fake_solver.chmod(0o755)
+
+    exit_code = main(
+        [
+            "solve-command",
+            "sj45(13)",
+            "--macro-out",
+            str(macro_output),
+            "--solver-command",
+            str(fake_solver),
+            "--wolframscript",
+            str(fake_wolframscript),
+            "--init-speed",
+            "0.23",
+            "--init-imux",
+            "0.88",
+            "--init-imuz",
+            "0.77",
+            "--exact-input-out",
+            str(exact_input_output),
+            "--exact-out",
+            str(exact_output),
+        ]
+    )
+
+    assert exit_code == 0
+    exact_input = json.loads(exact_input_output.read_text(encoding="utf-8"))
+    init_slot = exact_input["movement_plan"]["slots"][0]
+    assert init_slot["kind"] == "init"
+    assert init_slot["speed"] == 0.23
+    assert init_slot["imux"] == 0.88
+    assert init_slot["imuz"] == 0.77
+
+
+def test_solve_command_auto_outputs_and_constraints(tmp_path: Path) -> None:
+    fake_wolframscript = tmp_path / "fake_wolframscript"
+    fake_solver = tmp_path / "fake_solver"
+    auto_out_dir = tmp_path / "runs"
+
+    fake_wolframscript.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "problem = json.load(open(sys.argv[3]))\n"
+        "assert any(c.get('id') == 'min_z' for c in problem['constraints'])\n"
+        "print(json.dumps({\n"
+        "  'version': 1,\n"
+        "  'status': 'optimal',\n"
+        "  'objective_value': 1.0,\n"
+        "  'movement_directions': [{'slot': i + 1, 'radians': 0.0} for i in range(problem['n'])]\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+    fake_wolframscript.chmod(0o755)
+    fake_solver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "_payload = json.load(sys.stdin)\n"
+        "if '--macro-csv-out' in sys.argv:\n"
+        "    out_path = sys.argv[sys.argv.index('--macro-csv-out') + 1]\n"
+        "    open(out_path, 'w', encoding='utf-8').write('W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT\\n')\n"
+        "print(json.dumps({'version': 1, 'status': 'solved', 'diagnostics': {}}))\n",
+        encoding="utf-8",
+    )
+    fake_solver.chmod(0o755)
+
+    exit_code = main(
+        [
+            "solve-command",
+            "sj45(13)",
+            "--name",
+            "air_init_case",
+            "--out-dir",
+            str(auto_out_dir),
+            "--solver-command",
+            str(fake_solver),
+            "--wolframscript",
+            str(fake_wolframscript),
+            "--constraint-json",
+            '{"id":"min_z","expression":"Z[F, 14] >= -1000"}',
+        ]
+    )
+
+    assert exit_code == 0
+    macro_out = auto_out_dir / "air_init_case_macro.csv"
+    exact_input_out = auto_out_dir / "air_init_case_exact_input.json"
+    exact_out = auto_out_dir / "air_init_case_exact_solution.json"
+    assert macro_out.exists()
+    assert exact_input_out.exists()
+    assert exact_out.exists()
+    exact_input = json.loads(exact_input_out.read_text(encoding="utf-8"))
+    assert exact_input["name"] == "air_init_case"
+    assert exact_input["constraints"] == []
+    assert exact_input["annotations"][0]["kind"] == "unsupported_exact_constraints"
+    assert exact_input["annotations"][0]["constraints"][0]["id"] == "min_z"
+
+
+def test_exact_template_renders_extended_constraint_types() -> None:
+    problem = exact_template_to_mathematica_problem(
+        {
+            "version": 1,
+            "name": "extended-constraints",
+            "slot_indexing": "1_based",
+            "n": 2,
+            "movement_plan": {
+                "version": 1,
+                "slot_indexing": "1_based",
+                "slots": [
+                    {"slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91},
+                    {
+                        "slot": 2,
+                        "kind": "movement",
+                        "controls": {"forward": 1, "strafe": 0, "jump": False, "sneak": False, "sprint": False},
+                        "acceleration": {"medium": "air", "input": "no45_forward"},
+                        "retention": {"medium": "air"},
+                    },
+                ],
+            },
+            "constraints": [
+                {
+                    "id": "delta_x",
+                    "type": "position_delta_bound",
+                    "axis": "x",
+                    "lhs_slot": 2,
+                    "rhs_slot": 1,
+                    "sense": ">=",
+                    "value": 0.1,
+                },
+                {
+                    "id": "delta_xoff",
+                    "type": "position_delta_offset_bound",
+                    "axis": "x",
+                    "lhs_slot": 2,
+                    "rhs_slot": 1,
+                    "sense": "<=",
+                    "offset_symbol": "xoffn",
+                    "offset_value": -0.2,
+                },
+                {"id": "facing_2", "type": "facing_degrees_equal", "slot": 2, "degrees": 30.0},
+                {
+                    "id": "facing_2_soft",
+                    "type": "facing_degrees_equal",
+                    "slot": 2,
+                    "degrees": 30.0,
+                    "mathematica_tolerance_degrees": 5.0,
+                },
+                {"id": "expr_1", "type": "expression", "expression": "Z[F, 2] >= 0"},
+            ],
+            "exact_objective": {"type": "position", "axis": "z", "slot": 2},
+        },
+        constraint_tolerance=0.0,
+        fill_missing_tolerance=False,
+    )
+    materialized = materialize_mathematica_problem(problem)
+    expressions = [item["expression"] for item in materialized["constraints"]]
+    assert "X[F, 2] - X[F, 1] >= 0.1" in expressions
+    assert "X[F, 2] - X[F, 1] <= (xoffn + -0.2)" in expressions
+    assert "F[[2]] >= ((30.0*Pi/180) - (0.0*Pi/180))" in expressions
+    assert "F[[2]] <= ((30.0*Pi/180) + (0.0*Pi/180))" in expressions
+    assert "F[[2]] >= ((30.0*Pi/180) - (5.0*Pi/180))" in expressions
+    assert "F[[2]] <= ((30.0*Pi/180) + (5.0*Pi/180))" in expressions
+    assert "Z[F, 2] >= 0" in expressions
+
+
+def test_build_exact_input_skips_non_solver_constraints() -> None:
+    exact_input = build_exact_solver_input(
+        {
+            "version": 1,
+            "name": "mixed-constraints",
+            "slot_indexing": "1_based",
+            "n": 1,
+            "angle_domain": {"table_size": 65536},
+            "movement_plan": {
+                "version": 1,
+                "slot_indexing": "1_based",
+                "slots": [{"slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91}],
+            },
+            "constraints": [
+                {"id": "z_min", "type": "position_bounds", "slot": 0, "min_z": -1.0},
+                {
+                    "id": "delta_keep",
+                    "type": "position_delta_bound",
+                    "axis": "z",
+                    "lhs_slot": 1,
+                    "rhs_slot": 0,
+                    "sense": ">=",
+                    "value": 0.0,
+                },
+                {
+                    "id": "delta_offset_keep",
+                    "type": "position_delta_offset_bound",
+                    "axis": "x",
+                    "lhs_slot": 1,
+                    "rhs_slot": 0,
+                    "sense": "<=",
+                    "offset_symbol": "xoffn",
+                    "offset_value": 0.5,
+                },
+                {"id": "facing_keep", "type": "facing_degrees_equal", "slot": 1, "degrees": 0.0},
+                {"id": "expr", "type": "expression", "expression": "Z[F, 1] >= 0"},
+            ],
+            "exact_objective": {"type": "position", "axis": "z", "slot": 1},
+        },
+        {"status": "optimal", "objective_value": 1.0, "movement_directions": [{"slot": 1, "radians": 0.0}]},
+        0.001,
+    )
+    assert [constraint["id"] for constraint in exact_input["constraints"]] == [
+        "z_min",
+        "delta_keep",
+        "delta_offset_keep",
+        "facing_keep",
+    ]
+    annotations = exact_input.get("annotations", [])
+    assert annotations
+    assert annotations[0]["kind"] == "unsupported_exact_constraints"
+    assert annotations[0]["constraints"][0]["id"] == "expr"

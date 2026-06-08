@@ -1,0 +1,387 @@
+{
+  "version": 1,
+  "name": "sj11_init0_demo",
+  "slot_indexing": "1_based",
+  "n": 12,
+  "angle_domain": {
+    "table_size": 65536
+  },
+  "initial_state": {
+    "position": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "velocity": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "yaw": 0.0,
+    "pitch": 0.0,
+    "on_ground": true
+  },
+  "movement_plan": {
+    "version": 1,
+    "slot_indexing": "1_based",
+    "slots": [
+      {
+        "slot": 1,
+        "kind": "init",
+        "speed": 0.0,
+        "imux": 0.91,
+        "imuz": 0.91
+      },
+      {
+        "slot": 2,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": true,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "ground",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "flat_ground"
+        }
+      },
+      {
+        "slot": 3,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 4,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 5,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 6,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 7,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 8,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 9,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 10,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 11,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      },
+      {
+        "slot": 12,
+        "kind": "movement",
+        "controls": {
+          "forward": 1,
+          "strafe": 0,
+          "jump": false,
+          "sneak": false,
+          "sprint": true
+        },
+        "acceleration": {
+          "medium": "air",
+          "input": "no45_forward"
+        },
+        "retention": {
+          "medium": "air"
+        }
+      }
+    ]
+  },
+  "exact_objective": {
+    "type": "position",
+    "axis": "z",
+    "slot": 12,
+    "sense": "maximize",
+    "expression": "Z[F,12]",
+    "target_value": 2.6234315276759608,
+    "solution_tolerance": 0.001
+  },
+  "constraints": [],
+  "optimal_solution": {
+    "status": "optimal",
+    "objective_value": 2.6234315276759608,
+    "movement_directions": [
+      {
+        "slot": 1,
+        "radians": -0.001244330818611597,
+        "degrees": -0.07129490422451568
+      },
+      {
+        "slot": 2,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 3,
+        "radians": -7.346839692639297e-40,
+        "degrees": 0.0
+      },
+      {
+        "slot": 4,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 5,
+        "radians": -1.5777218104420236e-30,
+        "degrees": 0.0
+      },
+      {
+        "slot": 6,
+        "radians": 0.0,
+        "degrees": 0.0
+      },
+      {
+        "slot": 7,
+        "radians": -6.462348535570529e-27,
+        "degrees": 0.0
+      },
+      {
+        "slot": 8,
+        "radians": 9.860761315262648e-32,
+        "degrees": 0.0
+      },
+      {
+        "slot": 9,
+        "radians": 3.944304526105059e-31,
+        "degrees": 0.0
+      },
+      {
+        "slot": 10,
+        "radians": -1.4293680984916318e-21,
+        "degrees": 0.0
+      },
+      {
+        "slot": 11,
+        "radians": -1.232595164407831e-32,
+        "degrees": 0.0
+      },
+      {
+        "slot": 12,
+        "radians": 0.0,
+        "degrees": 0.0
+      }
+    ],
+    "points": [
+      {
+        "slot": 0,
+        "x": 0.0,
+        "z": 0.0
+      },
+      {
+        "slot": 1,
+        "x": 0.0,
+        "z": 0.0
+      },
+      {
+        "slot": 2,
+        "x": 0.0,
+        "z": 0.32739998618364297
+      },
+      {
+        "slot": 3,
+        "x": -1.871974694632898e-41,
+        "z": 0.5316403985996351
+      },
+      {
+        "slot": 4,
+        "x": -3.575471715843325e-41,
+        "z": 0.7429791784508372
+      },
+      {
+        "slot": 5,
+        "x": -4.020035051319596e-32,
+        "z": 0.9607774728542424
+      },
+      {
+        "slot": 6,
+        "x": -7.678267050196363e-32,
+        "z": 1.1844539256695605
+      },
+      {
+        "slot": 7,
+        "x": -1.64770708074755e-28,
+        "z": 1.4134795027938793
+      },
+      {
+        "slot": 8,
+        "x": -3.1463967198999145e-28,
+        "z": 1.6473727831796756
+      },
+      {
+        "slot": 9,
+        "x": -4.510103829957112e-28,
+        "z": 1.8856956736610773
+      },
+      {
+        "slot": 10,
+        "x": -3.6420873108419086e-23,
+        "z": 2.1280495094456504
+      },
+      {
+        "slot": 11,
+        "x": -6.956345817310957e-23,
+        "z": 2.3740715055618256
+      },
+      {
+        "slot": 12,
+        "x": -9.97232114511768e-23,
+        "z": 2.6234315276759608
+      }
+    ],
+    "diagnostics": {
+      "name": "sj11_init0_demo",
+      "sense": "maximize",
+      "component_override_count": 0,
+      "inertia_event_count": 0,
+      "stage": "relaxed",
+      "strict_objective_value": 2.6234315276759608,
+      "objective_deviation": 0.0
+    }
+  }
+}

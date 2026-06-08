@@ -12,7 +12,7 @@ movement_plan + typed constraints
 -> strict Wolfram solve
 -> relaxed Wolfram solve
 -> generated exact-solver input
--> C++ exact repair/search
+-> Python solver (mothball-driven simulation)
 -> exact JSON + optional macro CSV
 ```
 
@@ -21,8 +21,8 @@ Staged zero-tolerance behavior is now explicit: when
 Wolfram pass is skipped and `--relaxed-out` is a verbatim copy of strict
 Mathematica output (it is no longer replaced with exact-solver output).
 
-The no-mock end-to-end test runs this path with real `wolframscript` and the
-built C++ solver (run under `.venv-oracle` — see the Toolchain section):
+The no-mock end-to-end test runs this path with real `wolframscript`
+(run under `.venv-oracle` — see the Toolchain section):
 
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python -m pytest e2e
@@ -39,48 +39,26 @@ PYTHONPATH=orchestrator .venv-oracle/bin/python -m pytest e2e
   Wolfram. New hand-authored problems should generally not start here.
 - `schemas/exact_solver_input.schema.json`: movement plan plus Mathematica's
   selected `optimal_solution.movement_directions`.
-- `schemas/exact_solution.schema.json`: C++ exact solver JSON output.
+- `schemas/exact_solution.schema.json`: Python solver JSON output.
 - `schemas/macro_csv.md`: external macro CSV format.
 
-## Current Exact Solver Support
+## Python Solver
 
-The exact solver currently supports fixed-tick horizontal movement cases:
-
-- `init` speed slots, decomposed with `std::sin`/`std::cos`.
-- Flat ground and air forward movement for no-45 and 45 inputs.
-- Water and lava movement/retention for no-45 and 45 forward inputs.
-- Slime and ice ground retention; cobweb (`web`) ¼ cut + prev-web carry zero;
-  ladder (`ladder`) ±0.15 clamp.
-- Sneak input scaling; sprint attribute with the air one-tick delay.
-- Explicit `wall_hit.axes` retention cancellation per movement slot (no position
-  clamp — the optimizer re-anchors coordinates).
-- `wall_collision {axis, value}` threshold collision: after the slot's move, if
-  the axis crosses the wall coordinate, clamp the position to it and zero that
-  axis's velocity (real Minecraft moveEntity clamping). See the command modifier
-  `s[hitz=val](1)` below.
-- Inertia `hit` and `avoid` residual checks using post-retention velocity
-  before threshold zeroing.
-- Local discrete repair in 65536 Minecraft angle-index space.
-
-Important operational note: `status: failed` can still occur with strict
-constraints even when the constraint formulas are correct, because repair is a
-bounded local search (`max_repair_iterations`, `max_candidate_evaluations`,
-`top_k_moves`, `max_index_delta_per_iteration`). In those cases, shortfall is a
-search-budget/heuristic outcome, not a separate relaxed-constraint acceptance
-path inside the exact checker.
-
-The exact-solution JSON (`states_exact`) exposes both `velocity` (the
-pre-retention move velocity) and `retained_velocity` (post-drag, what carries to
-the next tick) per state.
+`orchestrator/wolframtas_orchestrator/python_solver.py` drives mothball's
+`Player.move()` directly, giving bit-exact Minecraft parity by construction.
+Mothball IS the source of truth — no physics is re-implemented. The solver
+supports all mechanics mothball supports: all mediums, sneak, sprint delay,
+ladder, web, wall_hit, wall_collision, and stop/stopair.
 
 Source of truth: the mothball reference simulator. There are NO hardcoded
-expected movement values anywhere. `e2e/test_command_parser.py` parses ~37
-mothball command strings and asserts the C++ solver matches mothball **bit-exact
-on all four components** (`x`, `z`, `vx`, `vz`) — so both travel and
-perpendicular drift are pinned to mothball, not to self-generated numbers. The
-C++ ctest fixtures assert only solver behaviour mothball cannot express (status,
-which constraint failed, repaired angle indices, a residual of exactly 0, or an
-axis a wall/threshold zeroes to exactly 0); none encodes a physics magnitude.
+expected movement values. `e2e/check_command_sim.py` parses 49 mothball command
+strings and asserts the Python solver matches mothball **bit-exact on all four
+components** (`x`, `z`, `vx`, `vz`).
+
+The exact-solution JSON (`states_exact`) exposes `velocity` (retained vx/vz
+after the tick, same as mothball's final state) and `retained_velocity` (same
+value) per state. Position is stored as `player.x + player.vx` to align with
+mothball's one-tick bookkeeping offset.
 
 ## Full-flow command coverage (command -> Wolfram -> exact -> macro)
 
@@ -93,33 +71,22 @@ mothball bit-for-bit: walk, sprint, walk-jump, sprint-jump, sneak, sneaksprint,
 - Cobweb is modeled in the Mathematica stage by editing the derived imu/mmu
   (web tick: `mmu *= web_motion_factor`, `imu = 0`; tick before a web:
   `imu *= web_motion_factor`), using the same shared `web_motion_factor` constant
-  the C++ solver uses for the real per-tick cut.
+  the Python solver uses for the real per-tick cut.
 - Ladder is intentionally treated as plain air in the Mathematica stage; the
-  0.15 clamp lives only in the C++ exact solver. So a ladder command where the
+  0.15 clamp lives only in the Python solver. So a ladder command where the
   clamp actually engages (e.g. a sprint-jump onto a ladder) trips the staged
   objective-drift guard and reports `failed`, even though the exact simulation is
   correct. This is a known, accepted optimizer-model approximation gap.
 
 Movement/medium mechanics (walk, sprint, jumps, 45, sneak, sneaksprint, air,
 water, lava, slime, ice, ladder, web, sprint delay) are validated by **parsing
-mothball command strings and comparing the C++ solver to the mothball simulator
+mothball command strings and comparing the Python solver to the mothball simulator
 bit-exact on x/z/vx/vz** (`e2e/test_command_parser.py`; ~37 commands, no
 hand-authored expected values). This replaced the per-mechanic hand-authored
-ctest fixtures.
+parity tests.
 
-The solver ctest is a lean set with NO hardcoded physics magnitudes: the C++
-unit tests assert only structural invariants (a symmetric 45 input leaves exactly
-zero perpendicular drift — the `-ffp-contract=off` guarantee; a wall cancels its
-axis to exactly 0), and the fixtures assert only behaviour mothball cannot
-express — angle repair, constraint/objective failure, one-axis `wall_hit`, and
-the seeded-velocity inertia threshold (`inertia_hit`, `inertia_avoid`) — via
-status, the worst constraint id, repaired angle indices, and residuals of
-exactly 0.
-
-Building this surfaced a 1-ULP slip bug: fluid slip was computed in float32
-(`0.5F / 0.91F`) but mothball computes it in float64 then rounds (`fl(0.5/0.91)`).
-Fixed in `solver/src/exact_movement.cpp` and `movement_model.py`; water was
-coincidentally unaffected.
+The `e2e/check_command_sim.py` suite covers 49 mothball command strings.
+`orchestrator/tests/` covers unit/component tests with no real Wolfram needed.
 
 ## Command parsing (mothball syntax)
 
@@ -148,7 +115,7 @@ Beyond mothball's own commands, the parser adds two WolframTAS-only conveniences
   and 2D mixed-axis movement — 30-degree facing regressions in DEFAULT_COMMANDS
   confirm there is no perpendicular artifact (the old "catch-up stop" approach
   was replaced with this direct-patch; that doc note was stale). Sprint removal
-  is the plan builder's responsibility; the C++ solver does NOT auto-cancel
+  is the plan builder's responsibility; the Python solver does NOT auto-cancel
   because constraints are satisfied with the mmu the plan computed.
 
 ## Cross-model consistency (single source of truth)
@@ -159,12 +126,12 @@ float32 (mothball reference semantics, same op order the solver uses) and emits
 two committed artifacts:
 
 - `orchestrator/wolframtas_orchestrator/movement_constants.json` (orchestrator/Wolfram)
-- `solver/include/wolframtas/movement_constants_generated.hpp` (C++ solver, `constexpr`)
+- [removed — Python solver reads `movement_constants.json` directly]
 
 Regenerate after any physics-constant change:
 `./.venv-oracle/bin/python tools/gen_movement_constants.py` (needs numpy 1.26).
 
-The C++ solver reads retention + base movement from the generated header (and
+The Python solver reads retention + base movement from the generated header (and
 does the forward/strafe 2D decomposition + sprint-jump 0.2 boost in `simulate()`).
 `movement_model.py` no longer derives physics: it reads the JSON and assembles
 the per-tick arrays the Mathematica stage uses (it folds base * input_factor +
@@ -186,7 +153,7 @@ immediate on ground, delayed one tick in air (previous slot), matching mothball'
 `prev_sprint`. The solver does NOT strip sprint on sneak/water/lava/wall; the
 plan builder (command parser or optimizer) sets the attribute per tick. Sneaking
 removes the keyboard input but not an already-true attribute, and the one-tick
-air delay yields the sneaksprint window. The `wall_sprint_cancel` ctest fixture
+air delay yields the sneaksprint window. The `wall_sprint_cancel` parity test
 covers dropping sprint at the wall tick (one no-sprint air slot follows); the
 turn-on delay and sneak+sprint (`sprintair`, `sns45`, `sj45`, ...) are covered by
 the parser command-parity tests.
@@ -241,7 +208,7 @@ Wolfram Engine must be installed and licensed for the e2e tests (real
 `/Applications/Wolfram.app/Contents/MacOS/WolframKernel`.
 
 Regenerate the shared movement constants after any physics-constant change
-(emits the JSON + C++ header; needs numpy 1.26):
+(emits the JSON; needs numpy 1.26):
 
 ```sh
 .venv-oracle/bin/python tools/gen_movement_constants.py
@@ -249,29 +216,19 @@ Regenerate the shared movement constants after any physics-constant change
 
 ## Test Commands
 
-Build and run solver tests (no Python env needed beyond a plain `python3` for the
-fixture asserter):
-
-```sh
-cmake -S solver -B solver/build
-cmake --build solver/build
-ctest --test-dir solver/build --output-on-failure
-```
-
 Run orchestrator unit/component tests:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=orchestrator .venv-oracle/bin/python -B -m pytest orchestrator/tests
 ```
 
-Run no-mock end-to-end tests (real `wolframscript` + built solver + mothball
-oracle; the parity test imports the vendored numpy-1.26 engine):
+Run no-mock end-to-end tests (real `wolframscript` + mothball oracle):
 
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python -m pytest e2e
 ```
 
-Run just the mothball command-parity check (the source-of-truth bit-exact test):
+Run just the mothball command-parity check (49 commands, bit-exact):
 
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python e2e/check_command_sim.py
@@ -279,14 +236,12 @@ PYTHONPATH=orchestrator .venv-oracle/bin/python e2e/check_command_sim.py
 
 ## Useful Commands
 
-Full flow from a mothball command (the headline capability: command -> Wolfram
--> exact -> macro):
+Full flow from a mothball command (command -> Wolfram -> Python solver -> macro):
 
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator \
   solve-command "sj45(12)" \
   --macro-out /tmp/wolframtas_macro.csv \
-  --solver-command solver/build/wolframtas_solver \
   --exact-out /tmp/wolframtas_exact.json
 ```
 
@@ -302,17 +257,24 @@ Run the staged exact flow (from an exact-solver input):
 
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator solve-exact-input \
-  examples/simple_jump/repair_exact_solver_input.json \
+  examples/p2p_zero_tol_demo/p2p_zero_tol_demo_template.json \
   --strict-out /tmp/wolframtas_strict.json \
   --relaxed-out /tmp/wolframtas_relaxed.json \
   --exact-input-out /tmp/wolframtas_exact_input.json \
-  --exact-out /tmp/wolframtas_exact.json \
-  --solver-command solver/build/wolframtas_solver
+  --exact-out /tmp/wolframtas_exact.json
 ```
 
-Run the C++ solver and write macro CSV:
+Run the Python solver directly on an exact-solver input:
 
 ```sh
-solver/build/wolframtas_solver --macro-csv-out /tmp/wolframtas_macro.csv \
-  < examples/simple_jump/flat_sprintjump_exact_solver_input.json
+PYTHONPATH=orchestrator .venv-oracle/bin/python - << 'EOF'
+import json
+from wolframtas_orchestrator.python_solver import solve, write_macro_csv
+from pathlib import Path
+with open("examples/p2p_zero_tol_demo/p2p_zero_tol_demo_exact_input.json") as f:
+    inp = json.load(f)
+sol = solve(inp)
+Path("/tmp/exact_solution.json").write_text(json.dumps(sol, indent=2))
+write_macro_csv(Path("/tmp/macro.csv"), sol)
+EOF
 ```

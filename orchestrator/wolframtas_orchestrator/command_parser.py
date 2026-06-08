@@ -113,7 +113,7 @@ def parse_command(command: str) -> dict[str, Any]:
     Returns a dict with keys ``exact_input`` (the solver input) and
     ``mothball_final`` (x, z, vx, vz from mothball's player).
     """
-    slots, directions, mothball_final, has_wall = _simulate_command(command)
+    slots, directions, initial_state, mothball_final, has_wall = _simulate_command(command)
     n = len(slots)
     exact_input = {
         "version": 1,
@@ -121,7 +121,7 @@ def parse_command(command: str) -> dict[str, Any]:
         "slot_indexing": "1_based",
         "n": n,
         "angle_domain": {"table_size": 65536},
-        "initial_state": _initial_state(),
+        "initial_state": initial_state,
         "movement_plan": {"version": 1, "slot_indexing": "1_based", "slots": slots},
         "optimal_solution": {
             "status": "optimal",
@@ -134,14 +134,27 @@ def parse_command(command: str) -> dict[str, Any]:
     return {"exact_input": exact_input, "mothball_final": mothball_final, "wall_hit": has_wall}
 
 
-def command_to_exact_template(command: str, objective_axis: str = "z", sense: str = "maximize") -> dict[str, Any]:
+def command_to_exact_template(
+    command: str,
+    objective_axis: str = "z",
+    sense: str = "maximize",
+    *,
+    init_speed: float = 0.0,
+    init_imux: float = 0.91,
+    init_imuz: float = 0.91,
+) -> dict[str, Any]:
     """Parse a mothball command into a WolframTAS exact-solver *template* for the
     staged optimization flow: the movement_plan skeleton (per-tick keys/mediums)
     plus an objective, with the per-tick facing/angles left FREE for Mathematica
     to optimize (no fixed optimal_solution). The objective defaults to maximizing
     the final position along the given axis (z = travel-distance).
     """
-    slots, _directions, _mothball_final, _has_wall = _simulate_command(command)
+    slots, _directions, initial_state, _mothball_final, _has_wall = _simulate_command(command)
+    if not slots or slots[0].get("kind") != "init":
+        raise RuntimeError("parsed command template is missing leading init slot")
+    slots[0]["speed"] = float(init_speed)
+    slots[0]["imux"] = float(init_imux)
+    slots[0]["imuz"] = float(init_imuz)
     n = len(slots)
     return {
         "version": 1,
@@ -149,24 +162,49 @@ def command_to_exact_template(command: str, objective_axis: str = "z", sense: st
         "slot_indexing": "1_based",
         "n": n,
         "angle_domain": {"table_size": 65536},
-        "initial_state": _initial_state(),
+        "initial_state": initial_state,
         "movement_plan": {"version": 1, "slot_indexing": "1_based", "slots": slots},
         "exact_objective": {"type": "position", "axis": objective_axis, "slot": n, "sense": sense},
         "constraints": [],
     }
 
 
-def _initial_state() -> dict[str, Any]:
+def _initial_state(
+    *,
+    x: float = 0.0,
+    z: float = 0.0,
+    vx: float = 0.0,
+    vz: float = 0.0,
+) -> dict[str, Any]:
     return {
-        "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-        "velocity": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "position": {"x": float(x), "y": 0.0, "z": float(z)},
+        "velocity": {"x": float(vx), "y": 0.0, "z": float(vz)},
         "yaw": 0.0,
         "pitch": 0.0,
         "on_ground": True,
     }
 
 
-def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, float], bool]:
+def _retention_multiplier_from_move_args(args: dict[str, Any], slip: float) -> float:
+    # Mirrors mothball's post-move drag: fl(0.91) * prev_slip. For the first
+    # tick prev_slip is initialized from this tick's slip.
+    if bool(args.get("water", False)):
+        return 0.800000011920929
+    if bool(args.get("lava", False)):
+        return 0.5000000596046448
+    if bool(args.get("airborne", False)):
+        return 0.9100000262260437
+    medium = _ground_retention_medium(float(slip))
+    if medium == "flat_ground":
+        return 0.546000063419342
+    if medium == "slime":
+        return 0.7280000448226929
+    if medium == "ice":
+        return 0.891800045967102
+    raise ValueError(f"unsupported retention medium: {medium}")
+
+
+def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, Any], dict[str, float], bool]:
     """Run the vendored mothball engine on a command, returning the movement_plan
     slots (with a leading zero-speed init slot for bookkeeping), the per-tick
     movement directions, mothball's final (x, z, vx, vz), and whether the command
@@ -194,9 +232,12 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
     original_move = Player.move
     virtual_x = 0.0
     virtual_z = 0.0
+    pre_first_move_state: tuple[float, float, float, float] | None = None
 
     def spy(self, ctx):  # type: ignore[no-untyped-def]
-        nonlocal virtual_x, virtual_z
+        nonlocal virtual_x, virtual_z, pre_first_move_state
+        if pre_first_move_state is None:
+            pre_first_move_state = (float(self.x), float(self.z), float(self.vx), float(self.vz))
         result = original_move(self, ctx)
         # Effective facing (MC yaw): last_rotation folds in the rotation arg /
         # default_rotation / rotation_offset; add the 45-command function_offset.
@@ -235,7 +276,14 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
 
     # A leading zero-speed init slot absorbs mothball's one-tick position/velocity
     # bookkeeping offset, so states_exact[n-1] equals mothball's final position.
-    slots: list[dict] = [{"slot": 1, "kind": "init", "speed": 0.0, "imux": 0.91, "imuz": 0.91}]
+    init_imux = 0.9100000262260437
+    init_imuz = 0.9100000262260437
+    if captured:
+        first_args, _first_facing, first_slip, *_rest = captured[0]
+        first_retention = _retention_multiplier_from_move_args(first_args, float(first_slip))
+        init_imux = first_retention
+        init_imuz = first_retention
+    slots: list[dict] = [{"slot": 1, "kind": "init", "speed": 0.0, "imux": init_imux, "imuz": init_imuz}]
     directions = [{"slot": 1, "radians": 0.0, "degrees": 0.0}]
     for index, (args, facing_deg, slip, _vx_before, _vz_before, _post_vx, _post_vz) in enumerate(captured):
         slot_index = index + 2
@@ -251,6 +299,11 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
         slots.append(slot)
         directions.append({"slot": slot_index, "radians": md, "degrees": math.degrees(md)})
 
+    initial_state = _initial_state()
+    if pre_first_move_state is not None:
+        px, pz, pvx, pvz = pre_first_move_state
+        initial_state = _initial_state(x=px, z=pz, vx=pvx, vz=pvz)
+
     if not has_wall:
         mothball_final = {
             "x": float(player.x),
@@ -258,7 +311,7 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
             "vx": float(player.vx),
             "vz": float(player.vz),
         }
-        return slots, directions, mothball_final, False
+        return slots, directions, initial_state, mothball_final, False
 
     # Pass B: mothball reference. Execute ticks normally while injecting wall-hit
     # effects for parity:
@@ -313,4 +366,4 @@ def _simulate_command(command: str) -> tuple[list[dict], list[dict], dict[str, f
         "vx": float(ref.vx),
         "vz": float(ref.vz),
     }
-    return slots, directions, mothball_final, True
+    return slots, directions, initial_state, mothball_final, True
