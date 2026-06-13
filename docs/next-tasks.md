@@ -58,8 +58,8 @@ the newly supported fixed-tick mechanics:
 - [x] inertia hit (`inertia_hit_*`, kept)
 - [x] inertia avoid (`inertia_avoid_*`, kept)
 
-All seven are wired into CTest via `solver/tests/assert_solver_fixture.py`
-(16 tests total, all green).
+The old fixture path has been removed. Current movement parity belongs in the
+Python mothball command-parity tests.
 
 Expected values are blessed against the mothball reference simulator
 (`player.py` under numpy 1.26); see the oracle notes in project memory. Notes on
@@ -90,7 +90,7 @@ Likely next mechanics:
   player's fixed input that sets tick counts; the solver is horizontal-only.
 - [x] ladder clamp handling in exact solver (`±0.15` horizontal clamp at the MC
   point: after accel, before the move). Fixture `ladder_clamp_*`. Validated
-  bit-exact vs mothball from rest. NOTE: mothball and MC match exactly; the C++
+  bit-exact vs mothball from rest. NOTE: mothball and MC match exactly; the Python
   (MC order: accel→move→drag) reproduces mothball when initial conditions
   correspond (validate from rest, never from a raw seeded velocity).
 - [x] web (cobweb) handling: motion `/4` the web tick + the prev-web carried

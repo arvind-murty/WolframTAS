@@ -7,8 +7,8 @@ permission**. Only the movement engine is included (parser + functions + context
 
 WolframTAS uses this as:
 - the command-string parser (mothball syntax, e.g. `sj(12)`), and
-- the reference movement simulator (the oracle the C++ exact solver is validated
-  against, bit-exact under numpy 1.26).
+- the reference movement simulator used directly by the Python exact solver and
+  as the bit-exact oracle under numpy 1.26.
 
 Do not edit these files to "fix" behavior — they are the reference. WolframTAS
 adapts their output to the `movement_plan` contract in separate, original code.

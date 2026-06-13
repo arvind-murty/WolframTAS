@@ -141,9 +141,9 @@ directly). This removed the earlier buggy duplicate derivation — e.g.
 input factors were missing on the orchestrator side; all now match the solver.
 
 `e2e/test_movement_model_consistency.py` guards the table two ways: the committed
-JSON/HPP must match a fresh run of the generator (no stale artifacts), and the
-JSON the orchestrator reads must equal what the compiled solver derives at
-runtime (echoed in its `derived_model` block).
+JSON must match a fresh run of the generator (no stale artifacts), and the JSON
+the orchestrator reads must equal what the Python solver reports in its
+`derived_model` block.
 
 ## Sprint state
 

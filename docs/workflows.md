@@ -121,6 +121,9 @@ PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator render-mathematica \
   --out examples/involved_from_schema.wls
 ```
 
+For the newer workflow that starts from a mothball command string plus typed
+constraints, see `docs/mothball-command-to-wolfram.md`.
+
 The orchestrator runs the canonical Mathematica optimizer and writes the
 approximate solution JSON with:
 

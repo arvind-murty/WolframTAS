@@ -13,7 +13,7 @@ from wolframtas_orchestrator.movement_model import (
 # number is sourced from the shared movement_constants table, never hardcoded:
 # the constant VALUES are validated as the source of truth elsewhere — bit-exact
 # against the mothball simulator in e2e/test_command_parser.py, and against the
-# compiled solver + generator in e2e/test_movement_model_consistency.py.
+# Python solver + generator in e2e/test_movement_model_consistency.py.
 
 TABLE = _table()
 NO45 = TABLE["input_factor"]["no45"]

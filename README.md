@@ -10,7 +10,7 @@ The intended pipeline is:
 2. The mod writes a versioned optimization request.
 3. The Python orchestrator starts the Wolfram/Mathematica optimizer.
 4. Mathematica emits an approximate solution.
-5. The orchestrator passes that solution to the C++ exact solver.
+5. The orchestrator passes that solution to the Python exact solver.
 6. The exact solver snaps/validates the route against Minecraft movement,
    floating point behavior, and the `2^16` discrete angle table.
 7. The mod writes a macro CSV and can render the solved path in-game.
@@ -19,10 +19,9 @@ The intended pipeline is:
 
 - `mod/`: Forge 1.8.9 client mod (later quality-of-life layer; not the priority).
 - `orchestrator/`: Python process orchestration between Minecraft, Mathematica,
-  and the exact solver. Also hosts the mothball command parser and the vendored
-  mothball engine (`orchestrator/vendor/`).
+  and the exact solver. Also hosts the Python exact solver, mothball command
+  parser, and the vendored mothball engine (`orchestrator/vendor/`).
 - `mathematica/`: Wolfram scripts and examples (`optimize.wls` is canonical).
-- `solver/`: C++ exact movement solver.
 - `tools/`: `gen_movement_constants.py` — generates the shared imu/mmu constants
   table consumed by both the orchestrator and the solver.
 - `schemas/`: Versioned JSON contracts shared across components.
@@ -32,7 +31,7 @@ The intended pipeline is:
 ## Current Status
 
 The core pipeline works end-to-end: a mothball command (e.g. `sj45(12)`) or a
-movement plan flows through the Wolfram optimizer and the C++ exact solver to an
+movement plan flows through the Wolfram optimizer and the Python exact solver to an
 exact solution and a macro CSV. The exact solver is validated **bit-exact against
 the mothball reference simulator** across ~46 commands; movement constants have a
 single generated source of truth. The Forge mod is still scaffolding.
