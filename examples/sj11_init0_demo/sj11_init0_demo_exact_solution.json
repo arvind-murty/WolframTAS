@@ -336,7 +336,8 @@
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -346,11 +347,12 @@
       "p": true,
       "n": false,
       "j": true,
-      "yaw": -0.0685483221932533,
+      "yaw": -0.0712949042245033,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -360,11 +362,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": 4.2094290714742266e-38,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -374,11 +377,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": -4.2094290714742266e-38,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -388,11 +392,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": 9.039680098406725e-29,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -402,11 +407,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": -9.039680098406725e-29,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -416,11 +422,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": 3.7026529683073945e-25,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -430,11 +437,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": -3.7027094663080096e-25,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -444,11 +452,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": -1.694940018451261e-29,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -458,11 +467,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": 8.189675943680947e-20,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -472,11 +482,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": -8.189675941350404e-20,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -486,11 +497,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 0.0,
+      "yaw": -7.062250076880254e-31,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     }
   ],
   "derived_model": {

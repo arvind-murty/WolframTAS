@@ -336,7 +336,8 @@
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -350,7 +351,8 @@
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -360,11 +362,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": 343.7786865234375,
+      "yaw": -16.225947535335465,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -374,11 +377,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": -11.8048095703125,
+      "yaw": -11.80367062653876,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -388,11 +392,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": -7.5311279296875,
+      "yaw": -7.532677275897598,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -402,11 +407,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": -5.042724609375,
+      "yaw": -5.043839672162463,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -416,11 +422,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": -3.548583984375,
+      "yaw": -3.5493278776355055,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -430,11 +437,12 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": -2.603759765625,
+      "yaw": -2.6048490832121445,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -444,11 +452,27 @@
       "p": true,
       "n": false,
       "j": false,
-      "yaw": -1.9830322265625,
+      "yaw": -1.9777860737490016,
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": -3.126388037344441e-13,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -462,7 +486,8 @@
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     },
     {
       "w": true,
@@ -476,21 +501,8 @@
       "pitch": 0.0,
       "l": 0,
       "r": 0,
-      "count": 1
-    },
-    {
-      "w": true,
-      "a": true,
-      "s": false,
-      "d": false,
-      "p": true,
-      "n": false,
-      "j": false,
-      "yaw": 0.0,
-      "pitch": 0.0,
-      "l": 0,
-      "r": 0,
-      "count": 1
+      "count": 1,
+      "h": 0
     }
   ],
   "derived_model": {
@@ -543,7 +555,7 @@
     "initial_residual_norm": "7.071585550690175e-05",
     "final_residual_norm": "0.0",
     "worst_constraint_id": "",
-    "candidate_evaluations": 89,
+    "candidate_evaluations": 4,
     "repair_iterations": 1,
     "exact_objective_value": "0.00015981600142758734",
     "objective_deviation": "7.263125004375315e-05",

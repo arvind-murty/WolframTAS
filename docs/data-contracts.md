@@ -191,9 +191,10 @@ Schema notes: `schemas/macro_csv.md`
 
 Status: external macro-tool format documented.
 
-The CSV columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`. `W/A/S/D` are movement
+The CSV columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H`. `W/A/S/D` are movement
 keys, `P` is sprint, `N` is sneak, `J` is jump, `YAW` and `PITCH` are relative
-degree deltas, `L/R` are click fields, and `COUNT` is the row repeat count.
+degree deltas, `L/R` are click fields, `COUNT` is the row repeat count, and `H`
+is a reserved field currently emitted as `0`.
 
 The solver writes JSON to stdout and can also write the external CSV with
 `--macro-csv-out path/to/macro.csv`.

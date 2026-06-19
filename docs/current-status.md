@@ -166,8 +166,10 @@ movement (the old scalar 45 "magnitude along the resultant" shortcut is gone).
 the solver derives the facing (MC yaw) via
 `facing = -movement_direction + atan2(strafe, forward)` and uses it for the
 decomposition, the angle repair, and the macro YAW column (the significant
-angle). For a 45 fixture/command, movement_direction stays the travel direction
-and the solver derives the 45° facing; the locked `flat_sprintjump_45` z is
+angle). Macro yaw is emitted as relative deltas and repaired/exact movement
+slots use midpoint-of-bucket yaw representatives. For a 45 fixture/command,
+movement_direction stays the travel direction and the solver derives the 45°
+facing; the locked `flat_sprintjump_45` z is
 unchanged. The solver compiles with
 `-ffp-contract=off` so float32 arithmetic matches numpy bit-exactly (no fused
 multiply-add). Mechanics covered and mothball-validated: fluids, inertia
@@ -177,7 +179,9 @@ hit/avoid, wall-hit, slime, ladder clamp, cobweb, sprint delay, sneak, sneak-45.
 
 - Mathematica angle variables are movement directions in radians, not final
   macro yaw degrees.
-- Degrees are output-only for diagnostics and macro relative yaw.
+- Degrees are output-only for diagnostics and macro relative yaw. Macro CSV
+  columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H`; `H` is currently emitted as
+  `0`.
 - Exact solver derives movement from `movement_plan`; it should not trust
   hand-authored `mmu`/`imu` values.
 - `mathematica/optimize.wls` is canonical and should not be changed lightly.

@@ -29,17 +29,17 @@
 ## Macro CSV
 
 ```
-W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT
-false,false,false,false,false,false,false,62.62098802,0.0,0,0,1
-true,false,false,false,true,false,true,-58.88288988,0.0,0,0,1
-true,true,false,false,true,false,false,343.77868652,0.0,0,0,1
-true,true,false,false,true,false,false,-11.80480957,0.0,0,0,1
-true,true,false,false,true,false,false,-7.53112793,0.0,0,0,1
-true,true,false,false,true,false,false,-5.04272461,0.0,0,0,1
-true,true,false,false,true,false,false,-3.54858398,0.0,0,0,1
-true,true,false,false,true,false,false,-2.60375977,0.0,0,0,1
-true,true,false,false,true,false,false,-1.98303223,0.0,0,0,1
-true,true,false,false,true,false,false,0.0,0.0,0,0,1
-true,true,false,false,true,false,false,0.0,0.0,0,0,1
-true,true,false,false,true,false,false,0.0,0.0,0,0,1
+W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H
+false,false,false,false,false,false,false,62.62098802,0.0,0,0,1,0
+true,false,false,false,true,false,true,-58.88288988,0.0,0,0,1,0
+true,true,false,false,true,false,false,343.77868652,0.0,0,0,1,0
+true,true,false,false,true,false,false,-11.80480957,0.0,0,0,1,0
+true,true,false,false,true,false,false,-7.53112793,0.0,0,0,1,0
+true,true,false,false,true,false,false,-5.04272461,0.0,0,0,1,0
+true,true,false,false,true,false,false,-3.54858398,0.0,0,0,1,0
+true,true,false,false,true,false,false,-2.60375977,0.0,0,0,1,0
+true,true,false,false,true,false,false,-1.98303223,0.0,0,0,1,0
+true,true,false,false,true,false,false,0.0,0.0,0,0,1,0
+true,true,false,false,true,false,false,0.0,0.0,0,0,1,0
+true,true,false,false,true,false,false,0.0,0.0,0,0,1,0
 ```

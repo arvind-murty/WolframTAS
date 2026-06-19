@@ -90,9 +90,9 @@ let mod concerns drive the core contracts.
   semantics (numpy 1.26). All mediums, sneak, sprint, ladder, web, wall_hit,
   and wall_collision are handled directly by mothball.
 - Macro CSV details are documented in `schemas/macro_csv.md`. The external
-  format columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT`; yaw and pitch are
-  relative degree deltas, not absolute angles. `python_solver.write_macro_csv()`
-  writes the CSV.
+  format columns are `W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H`; yaw and pitch are
+  relative degree deltas, not absolute angles, and `H` is currently always `0`.
+  `python_solver.write_macro_csv()` writes the CSV.
 - Python has a first staged exact handoff command:
   `python3 -m wolframtas_orchestrator solve-exact-input ...`. It derives
   Mathematica arrays from `movement_plan`, runs strict and relaxed Mathematica

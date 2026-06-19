@@ -31,6 +31,7 @@ def test_fixture_pipeline_writes_exact_solution(tmp_path: Path) -> None:
     assert payload["angles_discrete"][0]["yaw_index"] == 0
     assert payload["macro_rows"][0]["w"] is True
     assert payload["macro_rows"][0]["j"] is True
+    assert payload["macro_rows"][0]["h"] == 0
     assert payload["diagnostics"]["mode"] == "fixture"
 
 
@@ -379,7 +380,7 @@ def test_solve_command_accepts_custom_init_values(tmp_path: Path) -> None:
         "_payload = json.load(sys.stdin)\n"
         "if '--macro-csv-out' in sys.argv:\n"
         "    out_path = sys.argv[sys.argv.index('--macro-csv-out') + 1]\n"
-        "    open(out_path, 'w', encoding='utf-8').write('W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT\\n')\n"
+        "    open(out_path, 'w', encoding='utf-8').write('W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H\\n')\n"
         "print(json.dumps({'version': 1, 'status': 'solved', 'diagnostics': {}}))\n",
         encoding="utf-8",
     )
@@ -442,7 +443,7 @@ def test_solve_command_auto_outputs_and_constraints(tmp_path: Path) -> None:
         "_payload = json.load(sys.stdin)\n"
         "if '--macro-csv-out' in sys.argv:\n"
         "    out_path = sys.argv[sys.argv.index('--macro-csv-out') + 1]\n"
-        "    open(out_path, 'w', encoding='utf-8').write('W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT\\n')\n"
+        "    open(out_path, 'w', encoding='utf-8').write('W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H\\n')\n"
         "print(json.dumps({'version': 1, 'status': 'solved', 'diagnostics': {}}))\n",
         encoding="utf-8",
     )

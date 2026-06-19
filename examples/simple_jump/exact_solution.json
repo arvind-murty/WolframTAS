@@ -7,8 +7,8 @@
   ],
   "states_exact": [],
   "macro_rows": [
-    { "w": true, "a": false, "s": false, "d": false, "p": true, "n": false, "j": true, "yaw": 0.0, "pitch": 0.0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": false, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0.0, "pitch": 0.0, "l": 0, "r": 0, "count": 1 }
+    { "w": true, "a": false, "s": false, "d": false, "p": true, "n": false, "j": true, "yaw": 0.0, "pitch": 0.0, "l": 0, "r": 0, "count": 1, "h": 0 },
+    { "w": true, "a": false, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0.0, "pitch": 0.0, "l": 0, "r": 0, "count": 1, "h": 0 }
   ],
   "diagnostics": {
     "mode": "fixture",

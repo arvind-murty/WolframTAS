@@ -598,6 +598,7 @@ def fixture_exact_solution(approximate_solution: dict[str, Any], request: dict[s
                 "l": 0,
                 "r": 0,
                 "count": 1,
+                "h": 0,
             }
         )
 

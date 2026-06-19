@@ -3,7 +3,6 @@ Minecraft parity. Mothball is the source of truth.
 """
 from __future__ import annotations
 
-import itertools
 import json
 import math
 import sys
@@ -85,9 +84,9 @@ def _simulate_raw(
 ) -> list[_RawState]:
     """Simulate and return raw float states, one per tick (0 = initial, 1..n = slots).
 
-    For slots where yaw_indices[i] == seed_indices[i] (unrepaired): mothball
-    receives the continuous Mathematica facing angle for maximum accuracy.
-    For repaired slots: mothball receives the midpoint of the yaw bucket.
+    Non-init movement slots use the same midpoint-of-bucket yaw that the macro
+    emits. The continuous Mathematica angle is only used to seed/choose the
+    bucket; constraints and final states must describe the executable macro.
     """
     from cogs.movement.player import Player
     from cogs.movement.context import Context
@@ -150,11 +149,7 @@ def _simulate_raw(
         ladder = bool(slot.get("ladder", False))
         web = bool(slot.get("web", False))
 
-        # Facing: use Mathematica angle for unrepaired, bucket midpoint for repaired
-        if yaw_idx == seed_idx:
-            facing_deg = _facing_deg_from_slot(slot, mv_rad)
-        else:
-            facing_deg = _macro_absolute_yaw(yaw_idx)
+        facing_deg = _macro_absolute_yaw(yaw_idx)
 
         args: dict[str, Any] = {
             "forward": fl(fwd), "strafe": fl(str_),
@@ -343,16 +338,24 @@ def _evaluate(
 # ---------------------------------------------------------------------------
 # Repair search
 # ---------------------------------------------------------------------------
+def _bounded_repair_delta(seed: int, value: int) -> int:
+    return ((value - seed + 32768) & 65535) - 32768
+
+
+def _apply_repair_delta(seed: int, delta: int) -> int:
+    return (seed + delta) & 65535
+
+
 def _repair(
     exact_input: dict[str, Any],
     seed_indices: list[int],
     dirs: dict[int, float],
 ) -> tuple[list[int], dict[str, Any]]:
     cfg = exact_input.get("exact_solver", {})
-    max_iter = int(cfg.get("max_repair_iterations", 8))
-    max_evals = int(cfg.get("max_candidate_evaluations", 2000))
-    top_k = int(cfg.get("top_k_moves", 8))
-    max_delta = max(1, int(cfg.get("max_index_delta_per_iteration", 2)))
+    max_iter = int(cfg.get("max_repair_iterations", 16))
+    max_evals = int(cfg.get("max_candidate_evaluations", 8000))
+    beam_width = int(cfg.get("top_k_moves", 8))
+    max_delta = min(2, max(1, int(cfg.get("max_index_delta_per_iteration", 2))))
 
     slots = exact_input["movement_plan"]["slots"]
     movable = [i for i, s in enumerate(slots) if s.get("kind", "movement") != "init"]
@@ -369,74 +372,42 @@ def _repair(
 
     for _ in range(max_iter):
         iters += 1
-        base_score = best_ev.score
+        pass_start_score = best_ev.score
+        beam: list[tuple[float, list[int], _Eval]] = [(best_ev.score, list(best), best_ev)]
 
-        # Scan ±delta on each movable slot
-        ranked: list[tuple[float, int, int, int]] = []  # (score, |delta|, slot_i, delta)
         for i in movable:
-            for d in range(1, max_delta + 1):
-                for sign in (-1, +1):
-                    if evals >= max_evals:
-                        break
-                    cand = list(best)
-                    cand[i] = (cand[i] + sign * d) & 65535
-                    ev = _evaluate(_simulate_raw(exact_input, cand, seed_indices), exact_input, cand, dirs)
-                    evals += 1
-                    if ev.score < base_score:
-                        ranked.append((ev.score, d, i, sign * d))
+            expanded: list[tuple[float, list[int], _Eval]] = []
+            seen: set[tuple[int, ...]] = set()
+            for _score, indices, ev in beam:
+                current_delta = _bounded_repair_delta(seed_indices[i], indices[i])
+                for delta in range(-max_delta, max_delta + 1):
+                    cand = list(indices)
+                    cand[i] = _apply_repair_delta(seed_indices[i], delta)
+                    key = tuple(cand)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    if delta == current_delta:
+                        cand_ev = ev
+                    else:
+                        if evals >= max_evals:
+                            continue
+                        cand_ev = _evaluate(_simulate_raw(exact_input, cand, seed_indices), exact_input, cand, dirs)
+                        evals += 1
+                    expanded.append((cand_ev.score, cand, cand_ev))
+                    if cand_ev.score < best_ev.score:
+                        best = list(cand)
+                        best_ev = cand_ev
 
-        commit = list(best)
-        commit_ev_box = [best_ev]
+            if not expanded:
+                break
+            expanded.sort(key=lambda item: item[0])
+            beam = expanded[:max(1, beam_width)]
+            if best_ev.feasible or evals >= max_evals:
+                break
 
-        def _try(moves: list[tuple]) -> None:
-            nonlocal evals
-            if evals >= max_evals:
-                return
-            cand = list(best)
-            for _, _, si, di in moves:
-                cand[si] = (cand[si] + di) & 65535
-            ev = _evaluate(_simulate_raw(exact_input, cand, seed_indices), exact_input, cand, dirs)
-            evals += 1
-            if ev.score < commit_ev_box[0].score:
-                commit[:] = cand
-                commit_ev_box[0] = ev
-
-        if ranked:
-            ranked.sort()
-            top = ranked[:top_k]
-            for m in top:
-                _try([m])
-            for a, b in itertools.combinations(range(len(top)), 2):
-                if top[a][2] != top[b][2]:
-                    _try([top[a], top[b]])
-            for a, b, c in itertools.combinations(range(len(top)), 3):
-                ia, ib, ic = top[a][2], top[b][2], top[c][2]
-                if ia != ib and ia != ic and ib != ic:
-                    _try([top[a], top[b], top[c]])
-        else:
-            # Exhaustive ±1 pair fallback when no individual move helps
-            all_unit = [(i, d) for i in movable for d in (-1, +1)]
-            for ai in range(len(all_unit)):
-                for bj in range(ai + 1, len(all_unit)):
-                    if all_unit[ai][0] == all_unit[bj][0]:
-                        continue  # same slot
-                    if evals >= max_evals:
-                        break
-                    si, di = all_unit[ai]
-                    sj, dj = all_unit[bj]
-                    cand = list(best)
-                    cand[si] = (cand[si] + di) & 65535
-                    cand[sj] = (cand[sj] + dj) & 65535
-                    ev = _evaluate(_simulate_raw(exact_input, cand, seed_indices), exact_input, cand, dirs)
-                    evals += 1
-                    if ev.score < commit_ev_box[0].score:
-                        commit[:] = cand
-                        commit_ev_box[0] = ev
-
-        if commit_ev_box[0].score >= base_score:
+        if best_ev.score >= pass_start_score:
             break
-        best = list(commit)
-        best_ev = commit_ev_box[0]
         if best_ev.feasible or evals >= max_evals:
             break
 
@@ -449,7 +420,7 @@ def _diag(
     seed: list[int], best: list[int],
 ) -> dict[str, Any]:
     changed = [
-        {"slot": i + 1, "from": seed[i], "to": best[i], "delta": (best[i] - seed[i] + 32768) & 65535 - 32768}
+        {"slot": i + 1, "from": seed[i], "to": best[i], "delta": _bounded_repair_delta(seed[i], best[i])}
         for i in range(len(seed)) if seed[i] != best[i]
     ]
     return {
@@ -601,12 +572,12 @@ def _make_macro_row(slot: dict, yaw_delta: float) -> dict:
         "p": bool(ctrl.get("sprint", False)),
         "n": bool(ctrl.get("sneak", False)),
         "j": bool(ctrl.get("jump", False)),
-        "yaw": yaw_delta, "pitch": 0.0, "l": 0, "r": 0, "count": 1,
+        "yaw": yaw_delta, "pitch": 0.0, "l": 0, "r": 0, "count": 1, "h": 0,
     }
 
 
 def write_macro_csv(out_path: Path, solution: dict[str, Any]) -> None:
-    lines = ["W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT"]
+    lines = ["W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H"]
     for r in solution["macro_rows"]:
         lines.append(
             f"{'true' if r['w'] else 'false'},"
@@ -616,6 +587,6 @@ def write_macro_csv(out_path: Path, solution: dict[str, Any]) -> None:
             f"{'true' if r['p'] else 'false'},"
             f"{'true' if r['n'] else 'false'},"
             f"{'true' if r['j'] else 'false'},"
-            f"{r['yaw']},{r['pitch']},{r['l']},{r['r']},{r['count']}"
+            f"{r['yaw']},{r['pitch']},{r['l']},{r['r']},{r['count']},{r.get('h', 0)}"
         )
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")

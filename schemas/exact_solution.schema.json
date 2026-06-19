@@ -59,7 +59,7 @@
     },
     "macro_row": {
       "type": "object",
-      "required": ["w", "a", "s", "d", "p", "n", "j", "yaw", "pitch", "l", "r", "count"],
+      "required": ["w", "a", "s", "d", "p", "n", "j", "yaw", "pitch", "l", "r", "count", "h"],
       "properties": {
         "w": { "type": "boolean" },
         "a": { "type": "boolean" },
@@ -72,7 +72,8 @@
         "pitch": { "type": "number" },
         "l": { "type": "integer", "minimum": 0 },
         "r": { "type": "integer", "minimum": 0 },
-        "count": { "type": "integer", "minimum": 1 }
+        "count": { "type": "integer", "minimum": 1 },
+        "h": { "type": "integer", "const": 0 }
       },
       "additionalProperties": false
     },

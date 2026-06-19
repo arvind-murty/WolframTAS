@@ -2,54 +2,649 @@
   "version": 1,
   "status": "solved",
   "angles_discrete": [
-    { "tick": 0, "yaw_index": 0, "pitch_index": 0, "yaw_degrees": 0, "pitch_degrees": 0 },
-    { "tick": 1, "yaw_index": 0, "pitch_index": 0, "yaw_degrees": 0, "pitch_degrees": 0 },
-    { "tick": 2, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 3, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 4, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 5, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 6, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 7, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 8, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 9, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 10, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 11, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 12, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 },
-    { "tick": 13, "yaw_index": 8192, "pitch_index": 0, "yaw_degrees": 45, "pitch_degrees": 0 }
+    {
+      "tick": 0,
+      "yaw_index": 0,
+      "pitch_index": 0,
+      "yaw_degrees": 0.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 1,
+      "yaw_index": 0,
+      "pitch_index": 0,
+      "yaw_degrees": 0.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 2,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 3,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 4,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 5,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 6,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 7,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 8,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 9,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 10,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 11,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 12,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    },
+    {
+      "tick": 13,
+      "yaw_index": 8192,
+      "pitch_index": 0,
+      "yaw_degrees": 45.0,
+      "pitch_degrees": 0
+    }
   ],
   "states_exact": [
-    { "tick": 0, "position": { "x": "0", "y": "0", "z": "0" }, "velocity": { "x": "0", "y": "0", "z": "0" }, "retained_velocity": { "x": "0", "z": "0" }, "on_ground": false },
-    { "tick": 1, "position": { "x": "0", "y": "0", "z": "0.23" }, "velocity": { "x": "0", "y": "0", "z": "0.23" }, "retained_velocity": { "x": "0", "z": "0.2093" }, "on_ground": false },
-    { "tick": 2, "position": { "x": "0", "y": "0", "z": "0.7666999840021134" }, "velocity": { "x": "0", "y": "0", "z": "0.5366999840021134" }, "retained_velocity": { "x": "0", "z": "0.29303822530231377" }, "on_ground": false },
-    { "tick": 3, "position": { "x": "0", "y": "0", "z": "1.0857382079782238" }, "velocity": { "x": "0", "y": "0", "z": "0.3190382239761104" }, "retained_velocity": { "x": "0", "z": "0.2903247921853709" }, "on_ground": false },
-    { "tick": 4, "position": { "x": "0", "y": "0", "z": "1.4020629988373914" }, "velocity": { "x": "0", "y": "0", "z": "0.31632479085916754" }, "retained_velocity": { "x": "0", "z": "0.28785556797779027" }, "on_ground": false },
-    { "tick": 5, "position": { "x": "0", "y": "0", "z": "1.7159185654889784" }, "velocity": { "x": "0", "y": "0", "z": "0.3138555666515869" }, "retained_velocity": { "x": "0", "z": "0.2856085738841339" }, "on_ground": false },
-    { "tick": 6, "position": { "x": "0", "y": "0", "z": "2.027527138046909" }, "velocity": { "x": "0", "y": "0", "z": "0.31160857255793056" }, "retained_velocity": { "x": "0", "z": "0.28356380919997687" }, "on_ground": false },
-    { "tick": 7, "position": { "x": "0", "y": "0", "z": "2.3370909459206826" }, "velocity": { "x": "0", "y": "0", "z": "0.3095638078737735" }, "retained_velocity": { "x": "0", "z": "0.28170307328376787" }, "on_ground": false },
-    { "tick": 8, "position": { "x": "0", "y": "0", "z": "2.644794017878247" }, "velocity": { "x": "0", "y": "0", "z": "0.3077030719575645" }, "retained_velocity": { "x": "0", "z": "0.2800098035512179" }, "on_ground": false },
-    { "tick": 9, "position": { "x": "0", "y": "0", "z": "2.9508038201032614" }, "velocity": { "x": "0", "y": "0", "z": "0.30600980222501456" }, "retained_velocity": { "x": "0", "z": "0.2784689280501897" }, "on_ground": false },
-    { "tick": 10, "position": { "x": "0", "y": "0", "z": "3.2552727468272478" }, "velocity": { "x": "0", "y": "0", "z": "0.30446892672398634" }, "retained_velocity": { "x": "0", "z": "0.27706673130384296" }, "on_ground": false },
-    { "tick": 11, "position": { "x": "0", "y": "0", "z": "3.5583394768048873" }, "velocity": { "x": "0", "y": "0", "z": "0.3030667299776396" }, "retained_velocity": { "x": "0", "z": "0.27579073222789335" }, "on_ground": false },
-    { "tick": 12, "position": { "x": "0", "y": "0", "z": "3.860130207706577" }, "velocity": { "x": "0", "y": "0", "z": "0.30179073090169" }, "retained_velocity": { "x": "0", "z": "0.2746295730353148" }, "on_ground": false },
-    { "tick": 13, "position": { "x": "0", "y": "0", "z": "4.160759779415689" }, "velocity": { "x": "0", "y": "0", "z": "0.3006295717091115" }, "retained_velocity": { "x": "0", "z": "0.2735729181396157" }, "on_ground": false },
-    { "tick": 14, "position": { "x": "0", "y": "0", "z": "4.460332696229101" }, "velocity": { "x": "0", "y": "0", "z": "0.29957291681341236" }, "retained_velocity": { "x": "0", "z": "0.27261136215681764" }, "on_ground": false }
+    {
+      "tick": 0,
+      "position": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.0"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.0"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.0"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 1,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "0.23"
+      },
+      "velocity": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "0.23"
+      },
+      "retained_velocity": {
+        "x": "-5.038714217003106e-36",
+        "z": "0.2093"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 2,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "0.7666999900341034"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.5366999900341034"
+      },
+      "retained_velocity": {
+        "x": "-3.023228881357842e-36",
+        "z": "0.12558001458644868"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 3,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "1.0857382173036807"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.31903822726957737"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.4883970050065515"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 4,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "1.4020630111599033"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.31632479385622253"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.2903247951824258"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 5,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "1.7159185805388102"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.313855569378907"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.2878555707051104"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 6,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "2.027527155578602"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.3116085750397919"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.2856085763659952"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 7,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "2.3370909657108694"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.30956381013226736"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.2835638114584707"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 8,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "2.6447940397236636"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.30770307401279395"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.28170307533899724"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 9,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "2.950803843818937"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.3060098040952734"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.28000980542147696"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 10,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "3.255272772244859"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.30446892842592194"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.27846892975212534"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 11,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "3.55833950377126"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.303066731526401"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.27706673285260436"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 12,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "3.860130236082323"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.3017907323110629"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.2757907336372663"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 13,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "4.160759809073964"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.30062957299164084"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.2746295743178442"
+      },
+      "on_ground": false
+    },
+    {
+      "tick": 14,
+      "position": {
+        "x": "-5.537048590113303e-36",
+        "y": "0",
+        "z": "4.460332727054478"
+      },
+      "velocity": {
+        "x": "0.0",
+        "y": "0",
+        "z": "0.2995729179805141"
+      },
+      "retained_velocity": {
+        "x": "0.0",
+        "z": "0.2735729193067177"
+      },
+      "on_ground": false
+    }
   ],
   "macro_rows": [
-    { "w": false, "a": false, "s": false, "d": false, "p": false, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": false, "s": false, "d": false, "p": true, "n": false, "j": true, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 45, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 },
-    { "w": true, "a": true, "s": false, "d": false, "p": true, "n": false, "j": false, "yaw": 0, "pitch": 0, "l": 0, "r": 0, "count": 1 }
+    {
+      "w": false,
+      "a": false,
+      "s": false,
+      "d": false,
+      "p": false,
+      "n": false,
+      "j": false,
+      "yaw": 1.3793457181406746e-33,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": false,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": true,
+      "yaw": -1.3793457181406746e-33,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 45.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    },
+    {
+      "w": true,
+      "a": true,
+      "s": false,
+      "d": false,
+      "p": true,
+      "n": false,
+      "j": false,
+      "yaw": 0.0,
+      "pitch": 0.0,
+      "l": 0,
+      "r": 0,
+      "count": 1,
+      "h": 0
+    }
   ],
-  "derived_model": { "imux": [0.91, 0.546000063419342, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437], "imuz": [0.91, 0.546000063419342, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437, 0.9100000262260437], "mmu": [0.23, 0.12999998033046722, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654, 0.025999998673796654] },
-  "diagnostics": { "mode": "exact_solver_input_v1", "state_count": 15, "initial_residual_norm": "0", "final_residual_norm": "0", "worst_constraint_id": "", "candidate_evaluations": 0, "repair_iterations": 0, "exact_objective_value": "4.460332696229101", "objective_deviation": "1.1148306278130349e-08", "changed_angle_indices": [] }
+  "derived_model": {
+    "imux": [
+      0.91,
+      0.546000063419342,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437
+    ],
+    "imuz": [
+      0.91,
+      0.546000063419342,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437,
+      0.9100000262260437
+    ],
+    "mmu": [
+      0.23,
+      0.12999998033046722,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654,
+      0.025999998673796654
+    ]
+  },
+  "diagnostics": {
+    "mode": "python_solver",
+    "state_count": 15,
+    "initial_residual_norm": "0.0",
+    "final_residual_norm": "0.0",
+    "worst_constraint_id": "",
+    "candidate_evaluations": 0,
+    "repair_iterations": 0,
+    "exact_objective_value": "4.460332727054478",
+    "objective_deviation": "1.967707063954549e-08",
+    "changed_angle_indices": []
+  }
 }

@@ -6,8 +6,8 @@ solving.
 External macro-tool column order:
 
 ```csv
-W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT
-false,false,false,false,false,false,false,0.0,0.0,0,0,1
+W,A,S,D,P,N,J,YAW,PITCH,L,R,COUNT,H
+false,false,false,false,false,false,false,0.0,0.0,0,0,1,0
 ```
 
 Column meanings:
@@ -21,6 +21,7 @@ Column meanings:
 - `L`: left-click state/count for the row, currently emitted as `0`.
 - `R`: right-click state/count for the row, currently emitted as `0`.
 - `COUNT`: number of ticks to repeat this row.
+- `H`: reserved macro-tool field, currently emitted as `0`.
 
 Rows are run-length encoded by `COUNT`. A single uncompressed tick is
 represented with `COUNT = 1`.

@@ -12,11 +12,12 @@ Pass B now patches the crossed axis directly — see below).
 
 Open, roughly in order:
 
-1. Exact-solver repair robustness for hard constraints: default bounded search
-   can return `status: failed` with small x/z shortfall even though a feasible
-   repaired index set exists under larger search settings. Decide and implement
-   policy (better default budgets, adaptive widening/retry, or deterministic
-   fallback search) and add a regression fixture mirroring this behavior.
+1. Exact-solver repair robustness for hard constraints: repair now searches
+   combinations across ticks while keeping each tick within two yaw-table indices
+   of the Mathematica seed. A regression covers distributing a small x/z
+   shortfall across multiple ticks. Broader follow-up remains: decide whether to
+   add adaptive widening/retry or deterministic fallback search for harder
+   multi-slot cases.
 2. Wall sprint removal: the plan builder (command parser / Mathematica output)
    sets `controls.sprint` per slot; `wall_collision` sprint cancellation is NOT
    auto-applied in the solver because constraints are satisfied with the mmu the

@@ -164,6 +164,24 @@ expressions, solves strict constraints first, solves relaxed constraints second,
 checks relaxed objective drift against `solution_tolerance`, then invokes the
 exact solver with the relaxed movement directions.
 
+For debugging and route inspection, `scripts/solve_unified_trace.py` wraps the
+same staged flow and writes one Markdown file with compact strict, relaxed, exact,
+and macro views:
+
+```sh
+PYTHONPATH=orchestrator .venv-oracle/bin/python scripts/solve_unified_trace.py \
+  examples/p2p_zero_tol_demo/p2p_zero_tol_demo_template.json \
+  --out /tmp/wolframtas_unified_trace.md
+```
+
+The `strict` and `relaxed` sections contain Mathematica point traces with
+`x`, `z`, per-slot `vx`/`vz` deltas, and continuous yaw derived from the movement
+directions. The `exact` section contains exact `x`, `z`, `vx`, `vz`, yaw index,
+and yaw degrees from the Python solver. The `macro` section includes both macro
+rows and CSV text. The script defaults `default_relaxed_tolerance` to `0.0`; pass
+`--default-relaxed-tolerance 0.0001` or set `solver.default_relaxed_tolerance` in
+the input when you want a distinct relaxed solve.
+
 ## Python Solver
 
 `orchestrator/wolframtas_orchestrator/python_solver.py` drives mothball's

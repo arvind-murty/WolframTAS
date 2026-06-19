@@ -55,8 +55,9 @@ DEFAULT_COMMANDS = [
     # rotated mixed-axis wall collision regressions (short repros).
     "walk[hitz=0.01](1,30) walk(1,30)",
     "walk[hitx=-0.01](1,30) walk(1,30)",
-    # seeded velocity + explicit angled sprint-jump (state seeding parity)
-    "setvx(-0.269196777381033) sj(1, 3.7353515625)",
+    # seeded velocity + explicit angled sprint-jump at the executable midpoint
+    # representative for yaw bucket 680 (state seeding parity)
+    "setvx(-0.269196777381033) sj(1, 3.73809814453125)",
 ]
 
 
