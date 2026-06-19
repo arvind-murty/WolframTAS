@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "name": "block_route_demo",
+  "defaults": {
+    "run_ticks": 0
+  },
+  "landing_blocks": [
+    {
+      "kind": "landing",
+      "id": "start",
+      "x": 0,
+      "y": 64,
+      "z": 0,
+      "width": 1,
+      "length": 1,
+      "run_ticks": 1
+    },
+    {
+      "kind": "landing",
+      "id": "middle",
+      "x": 0,
+      "y": 65,
+      "z": 3,
+      "width": 1,
+      "length": 1
+    },
+    {
+      "kind": "landing",
+      "id": "finish",
+      "x": 0,
+      "y": 64,
+      "z": 6,
+      "width": 1,
+      "length": 1
+    }
+  ],
+  "avoid_blocks": [
+    {
+      "kind": "avoid",
+      "id": "mid_post",
+      "x": 0,
+      "y": 65,
+      "z": 4,
+      "width": 1,
+      "length": 1,
+      "height": 1,
+      "between": ["middle", "finish"],
+      "corner_hints": ["north_west"]
+    }
+  ],
+  "candidate_selection": {
+    "max_generated_candidates": 32,
+    "max_precise_candidates": 3,
+    "objective_margin": 0.02,
+    "coarse_tolerance": 0.03,
+    "coarse_optimizer": {
+      "method": "NelderMead",
+      "accuracy_goal": 3,
+      "precision_goal": 3,
+      "max_iterations": 300
+    }
+  },
+  "objective": {
+    "axis": "z",
+    "sense": "maximize"
+  },
+  "solver": {
+    "default_relaxed_tolerance": 0.0,
+    "solution_tolerance": 0.001
+  }
+}

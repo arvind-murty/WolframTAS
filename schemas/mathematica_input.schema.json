@@ -48,7 +48,10 @@
       "type": "object",
       "properties": {
         "accuracy_goal": { "type": "number" },
-        "precision_goal": { "type": "number" }
+        "precision_goal": { "type": "number" },
+        "working_precision": { "type": ["number", "string"] },
+        "max_iterations": { "type": "integer", "minimum": 1 },
+        "method": { "type": "string" }
       },
       "additionalProperties": false
     },

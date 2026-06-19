@@ -27,6 +27,14 @@ def main(argv: list[str] | None = None) -> int:
         return solve_exact_input_command(argv[1:])
     if argv and argv[0] == "solve-command":
         return solve_command_command(argv[1:])
+    if argv and argv[0] == "build-block-route":
+        return build_block_route_command(argv[1:])
+    if argv and argv[0] == "score-block-route":
+        return score_block_route_command(argv[1:])
+    if argv and argv[0] == "solve-block-route-candidates":
+        return solve_block_route_candidates_command(argv[1:])
+    if argv and argv[0] == "solve-block-route":
+        return solve_block_route_command(argv[1:])
 
     parser = argparse.ArgumentParser(description="Run the WolframTAS optimization pipeline.")
     parser.add_argument("request", type=Path, help="Optimization request JSON from the mod.")
@@ -307,6 +315,423 @@ def solve_command_command(argv: list[str]) -> int:
         exact_out.parent.mkdir(parents=True, exist_ok=True)
         exact_out.write_text(json.dumps(result["exact_solution"], indent=2) + "\n", encoding="utf-8")
     return 0
+
+
+def build_block_route_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Compile landing/avoid route blocks into exact-template JSON candidates.")
+    parser.add_argument("input", type=Path, help="Block route input JSON.")
+    parser.add_argument("--out", type=Path, required=True, help="Path for generated exact-template JSON.")
+    args = parser.parse_args(argv)
+
+    from .block_route import block_route_to_candidate_bundle
+
+    bundle = block_route_to_candidate_bundle(read_json(args.input))
+    payload = bundle["exact_template"] if bundle["kind"] == "exact_template" else bundle
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def score_block_route_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Coarse-score block-route avoid candidates with a fast Wolfram solve.")
+    parser.add_argument("input", type=Path, help="Block route input JSON or generated candidate bundle.")
+    parser.add_argument("--out", type=Path, required=True, help="Path for scored candidate bundle JSON.")
+    parser.add_argument("--selected-out", type=Path, help="Optional path for only the selected candidate templates.")
+    parser.add_argument("--wolframscript", default="wolframscript", help="wolframscript executable path.")
+    parser.add_argument(
+        "--optimizer-script",
+        type=Path,
+        default=Path("mathematica/optimize.wls"),
+        help="Wolfram optimizer script to run with wolframscript -file.",
+    )
+    parser.add_argument("--coarse-tolerance", type=float)
+    parser.add_argument("--objective-margin", type=float)
+    parser.add_argument("--max-precise-candidates", type=int)
+    parser.add_argument("--accuracy-goal", type=int)
+    parser.add_argument("--precision-goal", type=int)
+    parser.add_argument("--max-iterations", type=int)
+    parser.add_argument("--method")
+    args = parser.parse_args(argv)
+
+    payload = read_json(args.input)
+    settings = candidate_selection_settings(payload, args)
+    bundle = load_or_build_candidate_bundle(payload)
+    scored = score_candidate_bundle(
+        bundle,
+        wolframscript=args.wolframscript,
+        optimizer_script=args.optimizer_script,
+        coarse_tolerance=settings["coarse_tolerance"],
+        optimizer=settings["optimizer"],
+    )
+    selected = select_scored_candidates(
+        scored,
+        max_precise_candidates=settings["max_precise_candidates"],
+        objective_margin=settings["objective_margin"],
+    )
+    scored["selection"] = {
+        "max_precise_candidates": settings["max_precise_candidates"],
+        "objective_margin": settings["objective_margin"],
+        "selected_candidate_ids": [candidate["id"] for candidate in selected],
+    }
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(scored, indent=2) + "\n", encoding="utf-8")
+    if args.selected_out is not None:
+        selected_payload = {
+            "version": 1,
+            "kind": "selected_block_route_candidates",
+            "name": scored.get("name", ""),
+            "candidate_count": len(selected),
+            "candidates": selected,
+        }
+        args.selected_out.parent.mkdir(parents=True, exist_ok=True)
+        args.selected_out.write_text(json.dumps(selected_payload, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def solve_block_route_candidates_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Run precise staged/exact solving over block-route candidate templates.")
+    parser.add_argument("input", type=Path, help="Selected/scored/generated candidate bundle, exact template, or route input JSON.")
+    parser.add_argument("--out", type=Path, required=True, help="Path for precise candidate results JSON.")
+    parser.add_argument("--macro-out-dir", type=Path, help="Optional directory for per-candidate macro CSV files.")
+    parser.add_argument("--wolframscript", default="wolframscript", help="wolframscript executable path.")
+    parser.add_argument(
+        "--optimizer-script",
+        type=Path,
+        default=Path("mathematica/optimize.wls"),
+        help="Wolfram optimizer script to run with wolframscript -file.",
+    )
+    parser.add_argument("--default-relaxed-tolerance", type=float)
+    parser.add_argument("--solution-tolerance", type=float)
+    args = parser.parse_args(argv)
+
+    bundle = load_or_build_candidate_bundle(read_json(args.input))
+    output = solve_candidate_bundle_precise(
+        bundle,
+        wolframscript=args.wolframscript,
+        optimizer_script=args.optimizer_script,
+        default_relaxed_tolerance=args.default_relaxed_tolerance,
+        solution_tolerance=args.solution_tolerance,
+        macro_out_dir=args.macro_out_dir,
+    )
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def solve_block_route_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Build, score, and precisely solve a block route.")
+    parser.add_argument("input", type=Path, help="Block route input JSON.")
+    parser.add_argument("--out", type=Path, required=True, help="Path for final precise candidate results JSON.")
+    parser.add_argument("--build-out", type=Path, help="Optional path for generated candidate bundle/template JSON.")
+    parser.add_argument("--score-out", type=Path, help="Optional path for scored candidate bundle JSON.")
+    parser.add_argument("--selected-out", type=Path, help="Optional path for selected candidate bundle JSON.")
+    parser.add_argument("--macro-out-dir", type=Path, help="Optional directory for per-candidate macro CSV files.")
+    parser.add_argument("--wolframscript", default="wolframscript", help="wolframscript executable path.")
+    parser.add_argument(
+        "--optimizer-script",
+        type=Path,
+        default=Path("mathematica/optimize.wls"),
+        help="Wolfram optimizer script to run with wolframscript -file.",
+    )
+    parser.add_argument("--coarse-tolerance", type=float)
+    parser.add_argument("--objective-margin", type=float)
+    parser.add_argument("--max-precise-candidates", type=int)
+    parser.add_argument("--accuracy-goal", type=int)
+    parser.add_argument("--precision-goal", type=int)
+    parser.add_argument("--max-iterations", type=int)
+    parser.add_argument("--method")
+    parser.add_argument("--default-relaxed-tolerance", type=float)
+    parser.add_argument("--solution-tolerance", type=float)
+    args = parser.parse_args(argv)
+
+    from .block_route import block_route_to_candidate_bundle
+
+    route = read_json(args.input)
+    settings = candidate_selection_settings(route, args)
+    built = block_route_to_candidate_bundle(route)
+    build_payload = built["exact_template"] if built["kind"] == "exact_template" else built
+    if args.build_out is not None:
+        args.build_out.parent.mkdir(parents=True, exist_ok=True)
+        args.build_out.write_text(json.dumps(build_payload, indent=2) + "\n", encoding="utf-8")
+
+    bundle = load_or_build_candidate_bundle(build_payload)
+    scored = score_candidate_bundle(
+        bundle,
+        wolframscript=args.wolframscript,
+        optimizer_script=args.optimizer_script,
+        coarse_tolerance=settings["coarse_tolerance"],
+        optimizer=settings["optimizer"],
+    )
+    selected = select_scored_candidates(
+        scored,
+        max_precise_candidates=settings["max_precise_candidates"],
+        objective_margin=settings["objective_margin"],
+    )
+    scored["selection"] = {
+        "max_precise_candidates": settings["max_precise_candidates"],
+        "objective_margin": settings["objective_margin"],
+        "selected_candidate_ids": [candidate["id"] for candidate in selected],
+    }
+    if args.score_out is not None:
+        args.score_out.parent.mkdir(parents=True, exist_ok=True)
+        args.score_out.write_text(json.dumps(scored, indent=2) + "\n", encoding="utf-8")
+
+    selected_bundle = {
+        "version": 1,
+        "kind": "selected_block_route_candidates",
+        "name": scored.get("name", ""),
+        "candidate_count": len(selected),
+        "candidates": selected,
+    }
+    if args.selected_out is not None:
+        args.selected_out.parent.mkdir(parents=True, exist_ok=True)
+        args.selected_out.write_text(json.dumps(selected_bundle, indent=2) + "\n", encoding="utf-8")
+
+    precise = solve_candidate_bundle_precise(
+        selected_bundle,
+        wolframscript=args.wolframscript,
+        optimizer_script=args.optimizer_script,
+        default_relaxed_tolerance=args.default_relaxed_tolerance,
+        solution_tolerance=args.solution_tolerance,
+        macro_out_dir=args.macro_out_dir,
+    )
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(precise, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def load_or_build_candidate_bundle(payload: dict[str, Any]) -> dict[str, Any]:
+    if payload.get("kind") in {
+        "block_route_candidate_bundle",
+        "scored_block_route_candidate_bundle",
+        "selected_block_route_candidates",
+    }:
+        return payload
+    if payload.get("kind") == "exact_template":
+        return {"version": 1, "kind": "block_route_candidate_bundle", "name": payload["exact_template"].get("name", ""), "candidate_count": 1, "candidates": [{"id": "base", "avoid_choices": [], "exact_template": payload["exact_template"]}]}
+    if payload.get("version") == 1 and "movement_plan" in payload:
+        return {"version": 1, "kind": "block_route_candidate_bundle", "name": payload.get("name", ""), "candidate_count": 1, "candidates": [{"id": "base", "avoid_choices": [], "exact_template": payload}]}
+
+    from .block_route import block_route_to_candidate_bundle
+
+    bundle = block_route_to_candidate_bundle(payload)
+    if bundle["kind"] == "exact_template":
+        return {
+            "version": 1,
+            "kind": "block_route_candidate_bundle",
+            "name": bundle["exact_template"].get("name", ""),
+            "candidate_count": 1,
+            "candidates": [{"id": "base", "avoid_choices": [], "exact_template": bundle["exact_template"]}],
+        }
+    return bundle
+
+
+def candidate_selection_settings(payload: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    route_settings = payload.get("candidate_selection", {})
+    if not isinstance(route_settings, dict):
+        route_settings = {}
+    optimizer_settings = route_settings.get("coarse_optimizer", {})
+    if not isinstance(optimizer_settings, dict):
+        optimizer_settings = {}
+
+    coarse_tolerance = _arg_or_setting(args, "coarse_tolerance", route_settings, 0.03)
+    objective_margin = _arg_or_setting(args, "objective_margin", route_settings, 0.02)
+    max_precise_candidates = int(_arg_or_setting(args, "max_precise_candidates", route_settings, 3))
+    if max_precise_candidates <= 0:
+        raise ValueError("max_precise_candidates must be > 0")
+
+    optimizer = {
+        "accuracy_goal": int(_arg_or_setting(args, "accuracy_goal", optimizer_settings, 3)),
+        "precision_goal": int(_arg_or_setting(args, "precision_goal", optimizer_settings, 3)),
+        "max_iterations": int(_arg_or_setting(args, "max_iterations", optimizer_settings, 300)),
+        "method": str(_arg_or_setting(args, "method", optimizer_settings, "NelderMead")),
+    }
+    return {
+        "coarse_tolerance": float(coarse_tolerance),
+        "objective_margin": float(objective_margin),
+        "max_precise_candidates": max_precise_candidates,
+        "optimizer": optimizer,
+    }
+
+
+def _arg_or_setting(args: argparse.Namespace, name: str, settings: dict[str, Any], default: Any) -> Any:
+    value = getattr(args, name)
+    if value is not None:
+        return value
+    return settings.get(name, default)
+
+
+def selected_candidates_from_bundle(bundle: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = bundle.get("candidates", [])
+    if not isinstance(candidates, list):
+        raise ValueError("candidate bundle must contain candidates array")
+    selection = bundle.get("selection", {})
+    selected_ids = selection.get("selected_candidate_ids") if isinstance(selection, dict) else None
+    if selected_ids:
+        selected_set = {str(candidate_id) for candidate_id in selected_ids}
+        return [candidate for candidate in candidates if str(candidate.get("id")) in selected_set]
+    return candidates
+
+
+def solve_candidate_bundle_precise(
+    bundle: dict[str, Any],
+    *,
+    wolframscript: str,
+    optimizer_script: Path,
+    default_relaxed_tolerance: float | None,
+    solution_tolerance: float | None,
+    macro_out_dir: Path | None,
+) -> dict[str, Any]:
+    candidates = selected_candidates_from_bundle(bundle)
+    results: list[dict[str, Any]] = []
+    for candidate in candidates:
+        exact_template = candidate["exact_template"]
+        solver_settings = exact_template.get("solver", {})
+        candidate_default_relaxed_tolerance = (
+            default_relaxed_tolerance
+            if default_relaxed_tolerance is not None
+            else float(solver_settings.get("default_relaxed_tolerance", 0.0001))
+        )
+        candidate_solution_tolerance = (
+            solution_tolerance
+            if solution_tolerance is not None
+            else float(solver_settings.get("solution_tolerance", 0.001))
+        )
+        macro_csv_out = None
+        if macro_out_dir is not None:
+            macro_csv_out = macro_out_dir / f"{output_stem(candidate['id'])}_macro.csv"
+        try:
+            result = run_staged_exact_flow(
+                exact_template,
+                wolframscript=wolframscript,
+                optimizer_script=optimizer_script,
+                default_relaxed_tolerance=candidate_default_relaxed_tolerance,
+                solution_tolerance=candidate_solution_tolerance,
+                macro_csv_out=macro_csv_out,
+            )
+            results.append({
+                "id": candidate["id"],
+                "status": "completed",
+                "avoid_choices": copy.deepcopy(candidate.get("avoid_choices", [])),
+                "coarse_score": copy.deepcopy(candidate.get("coarse_score")),
+                "strict_solution": result["strict_solution"],
+                "relaxed_solution": result["relaxed_solution"],
+                "exact_input": result["exact_input"],
+                "exact_solution": result["exact_solution"],
+                "macro_csv": str(macro_csv_out) if macro_csv_out is not None else None,
+            })
+        except Exception as exc:
+            results.append({
+                "id": candidate["id"],
+                "status": "error",
+                "avoid_choices": copy.deepcopy(candidate.get("avoid_choices", [])),
+                "coarse_score": copy.deepcopy(candidate.get("coarse_score")),
+                "error": str(exc),
+                "macro_csv": None,
+            })
+
+    best = select_best_precise_result(results)
+    completed_count = sum(1 for result in results if result.get("status") == "completed")
+    return {
+        "version": 1,
+        "kind": "precise_block_route_candidate_results",
+        "status": "solved" if best is not None else "failed",
+        "name": bundle.get("name", ""),
+        "candidate_count": len(results),
+        "completed_candidate_count": completed_count,
+        "error_candidate_count": len(results) - completed_count,
+        "best_candidate_id": best["id"] if best is not None else None,
+        "results": results,
+    }
+
+
+def score_candidate_bundle(
+    bundle: dict[str, Any],
+    *,
+    wolframscript: str,
+    optimizer_script: Path,
+    coarse_tolerance: float,
+    optimizer: dict[str, Any],
+) -> dict[str, Any]:
+    scored = copy.deepcopy(bundle)
+    scored["kind"] = "scored_block_route_candidate_bundle"
+    scored["scoring"] = {
+        "coarse_tolerance": coarse_tolerance,
+        "optimizer": copy.deepcopy(optimizer),
+    }
+    for candidate in scored.get("candidates", []):
+        exact_template = candidate["exact_template"]
+        problem = exact_template_to_mathematica_problem(
+            exact_template,
+            constraint_tolerance=coarse_tolerance,
+            fill_missing_tolerance=True,
+        )
+        for constraint in problem.get("constraints", []):
+            constraint["mathematica_tolerance"] = coarse_tolerance
+        problem["optimizer"] = copy.deepcopy(optimizer)
+        with tempfile.TemporaryDirectory(prefix="wolframtas-score-") as directory:
+            problem_input = Path(directory) / f"{candidate['id']}.json"
+            problem_input.write_text(json.dumps(materialize_mathematica_problem(problem)), encoding="utf-8")
+            solution = run_wolfram_file(wolframscript, optimizer_script, problem_input)
+        candidate["coarse_solution"] = solution
+        candidate["coarse_score"] = {
+            "status": solution.get("status", "unknown"),
+            "objective_value": float(solution["objective_value"]),
+            "constraint_tolerance": coarse_tolerance,
+        }
+    scored["candidates"] = _rank_scored_candidates(scored.get("candidates", []))
+    for rank, candidate in enumerate(scored["candidates"], start=1):
+        candidate["coarse_score"]["rank"] = rank
+    return scored
+
+
+def select_scored_candidates(
+    scored_bundle: dict[str, Any],
+    *,
+    max_precise_candidates: int,
+    objective_margin: float,
+) -> list[dict[str, Any]]:
+    if max_precise_candidates <= 0:
+        raise ValueError("max_precise_candidates must be > 0")
+    candidates = _rank_scored_candidates(scored_bundle.get("candidates", []))
+    if not candidates:
+        return []
+    sense = candidates[0]["exact_template"].get("exact_objective", {}).get("sense", "maximize")
+    best_value = float(candidates[0]["coarse_score"]["objective_value"])
+
+    selected: list[dict[str, Any]] = []
+    for index, candidate in enumerate(candidates):
+        value = float(candidate["coarse_score"]["objective_value"])
+        close = value >= best_value - objective_margin if sense == "maximize" else value <= best_value + objective_margin
+        if index < max_precise_candidates or close:
+            selected.append(candidate)
+    return selected
+
+
+def _rank_scored_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not candidates:
+        return []
+    sense = candidates[0]["exact_template"].get("exact_objective", {}).get("sense", "maximize")
+    reverse = sense == "maximize"
+    return sorted(candidates, key=lambda item: float(item["coarse_score"]["objective_value"]), reverse=reverse)
+
+
+def select_best_precise_result(results: list[dict[str, Any]]) -> dict[str, Any] | None:
+    completed = [result for result in results if result.get("status") == "completed"]
+    if not completed:
+        return None
+    sense = completed[0]["exact_input"].get("exact_objective", {}).get("sense", "maximize")
+    solved = [result for result in completed if result["exact_solution"].get("status") == "solved"]
+    pool = solved or completed
+    reverse = sense == "maximize"
+    return sorted(pool, key=precise_result_objective_value, reverse=reverse)[0]
+
+
+def precise_result_objective_value(result: dict[str, Any]) -> float:
+    diagnostics = result["exact_solution"].get("diagnostics", {})
+    if "exact_objective_value" in diagnostics:
+        return float(diagnostics["exact_objective_value"])
+    return float(result["relaxed_solution"]["objective_value"])
 
 
 def parse_cli_constraints(constraint_json: list[str], constraints_file: Path | None) -> list[dict[str, Any]]:

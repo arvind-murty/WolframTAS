@@ -53,7 +53,9 @@ let mod concerns drive the core contracts.
   inertia events.
 - `mathematica/optimize.wls` is the canonical CLI optimizer entrypoint:
   `wolframscript -file mathematica/optimize.wls path/to/input.json`. It prints a
-  single RawJSON approximate solution object to stdout.
+  single RawJSON approximate solution object to stdout. It honors
+  `optimizer.accuracy_goal`, `precision_goal`, `working_precision`,
+  `max_iterations`, and `method`.
 - Schema-to-Wolfram rendering belongs to the Python orchestrator, currently via
   `python3 -m wolframtas_orchestrator render-mathematica`. Do not create random
   one-off generator scripts; add reusable code under `orchestrator/` instead.
@@ -98,6 +100,22 @@ let mod concerns drive the core contracts.
   Mathematica arrays from `movement_plan`, runs strict and relaxed Mathematica
   solves, checks objective drift, writes the generated exact input, and invokes
   the Python solver.
+- High-level block-route authoring is `schemas/block_route_input.schema.json`
+  and `python3 -m wolframtas_orchestrator build-block-route ...`. It compiles an
+  ordered `landing_blocks` list into the existing exact-template shape.
+  `run_ticks` belong to the departure landing block and generate running overlap
+  constraints; landing constraints are generated on target landing blocks. Solid
+  `avoid_blocks` are separate top-level blocks keyed by `between: [from, to]`;
+  they use mothball vertical trace overlap and enumerate per-tick/corner side
+  schedules into candidate bundles of ordinary conjunctive `position_bounds`.
+  `score-block-route` runs a cheap Wolfram pass over a route or candidate bundle
+  and writes ranked/selected candidates for the later precise staged solve.
+  `solve-block-route-candidates` runs strict/relaxed Mathematica plus exact
+  solving over selected candidates and reports the best exact candidate.
+  `solve-block-route` chains build, score, and precise solve as the normal
+  end-to-end route command.
+  Air slot counts are computed from mothball's vertical jump tick order;
+  `Imux`/`Imuz`/`Mmu` are still derived from the generated `movement_plan`.
 - Zero-relaxed-tolerance semantics for `solve-exact-input`: when
   `default_relaxed_tolerance == 0.0`, the relaxed Wolfram run is skipped and
   `--relaxed-out` is written as a verbatim copy of strict Mathematica output

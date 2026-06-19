@@ -6,9 +6,12 @@ This is the recommended implementation queue for the next agent/session.
 
 Recently completed: single-source movement constants table, cobweb Mathematica
 model, test suite rewritten to compare bit-exact vs mothball, `stop`/`stopair`
-parity, `s[hitx=val]`/`s[hitz=val]` wall-collision modifier. 2D mixed-axis wall
-validation confirmed working (the old "catch-up stop" note in the docs was stale;
-Pass B now patches the crossed axis directly — see below).
+parity, `s[hitx=val]`/`s[hitz=val]` wall-collision modifier, and high-level
+block-route input compilation to exact-template JSON, block-route avoid obstacle
+candidate generation, coarse scoring for generated avoid candidates, and a
+precise selected-candidate runner plus one-shot `solve-block-route` command. 2D
+mixed-axis wall validation confirmed working (the old "catch-up stop" note in
+the docs was stale; Pass B now patches the crossed axis directly — see below).
 
 Open, roughly in order:
 
@@ -23,9 +26,12 @@ Open, roughly in order:
    auto-applied in the solver because constraints are satisfied with the mmu the
    plan builder computed. If a hand-authored input needs sprint cancellation,
    clear `controls.sprint` on the appropriate slot explicitly.
-3. The rest of this file (schema validation, legacy fixture path, Wolfram
+3. Block-route follow-ups: support non-normal vertical mechanics (headhit,
+   ladder, water, slime, etc.), add real route fixtures for avoid-block routes,
+   and decide whether final-block `run_ticks` should remain rejected or become
+   an explicit final-run constraint mode.
+4. The rest of this file (schema validation, legacy fixture path, Wolfram
    rendering ownership, mod-facing pipeline) is still open and unchanged.
-4. Push the local commits (`git push`) — several commits are ahead of origin.
 
 The detailed historical checklist follows.
 

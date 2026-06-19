@@ -73,6 +73,16 @@ makeInertiaConstraint[event_, n_Integer] := Module[
   ]
 ];
 
+optimizerPrecisionValue[value_] := If[
+  StringQ[value],
+  Switch[value,
+    "MachinePrecision", MachinePrecision,
+    "Automatic", Automatic,
+    _, fail["optimizer.working_precision string must be MachinePrecision or Automatic"]
+  ],
+  value
+];
+
 coefFromIToT[imu_List, t_Integer] := Module[{c = ConstantArray[0., t]},
   c[[t]] = 1.;
   Do[c[[i]] = 1. + imu[[i]]*c[[i + 1]], {i, t - 1, 1, -1}];
@@ -94,7 +104,7 @@ run[] := Module[
     args, inputPath, problem, arrays, constants, objectiveSpec, constraintSpecs,
     inertiaEvents, overrides, optimizer, n, sense, objectiveExpression, constraintExpressions,
     mmuxOverrideRules, mmuzOverrideRules, solution, objectiveValue, rules, fopt,
-    accuracyGoal, precisionGoal, optimizerOptions, status
+    accuracyGoal, precisionGoal, workingPrecision, maxIterations, method, optimizerOptions, status
   },
 
   args = $ScriptCommandLine;
@@ -160,7 +170,13 @@ run[] := Module[
   If[!AssociationQ[optimizer], fail["optimizer must be an object"]];
   accuracyGoal = Lookup[optimizer, "accuracy_goal", 20];
   precisionGoal = Lookup[optimizer, "precision_goal", 20];
+  workingPrecision = optimizerPrecisionValue[Lookup[optimizer, "working_precision", Automatic]];
+  maxIterations = Lookup[optimizer, "max_iterations", Automatic];
+  method = Lookup[optimizer, "method", Automatic];
   optimizerOptions = {AccuracyGoal -> accuracyGoal, PrecisionGoal -> precisionGoal};
+  If[workingPrecision =!= Automatic, optimizerOptions = Append[optimizerOptions, WorkingPrecision -> workingPrecision]];
+  If[maxIterations =!= Automatic, optimizerOptions = Append[optimizerOptions, MaxIterations -> maxIterations]];
+  If[method =!= Automatic, optimizerOptions = Append[optimizerOptions, Method -> method]];
 
   solution = Quiet[
     If[sense == "maximize",

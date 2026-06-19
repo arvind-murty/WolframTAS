@@ -124,6 +124,95 @@ PYTHONPATH=orchestrator python3 -m wolframtas_orchestrator render-mathematica \
 For the newer workflow that starts from a mothball command string plus typed
 constraints, see `docs/mothball-command-to-wolfram.md`.
 
+## Block Route Input
+
+For routes that can be described as an ordered list of platform blocks, compile
+the block route into the existing exact-template shape before running the staged
+solver:
+
+```sh
+PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator \
+  build-block-route examples/block_route_demo/block_route.json \
+  --out examples/block_route_demo/block_route_template.json
+```
+
+For the normal end-to-end route solve, use the one-shot command:
+
+```sh
+PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator \
+  solve-block-route examples/block_route_simple/block_route.json \
+  --out /tmp/block_route_precise.json \
+  --default-relaxed-tolerance 0.0
+```
+
+`schemas/block_route_input.schema.json` documents the input. Use
+`landing_blocks` for the ordered platform route; legacy `blocks` remains an
+alias. The first landing block is the starting/departure block; every following
+landing block is a target. A block's `run_ticks` belongs to that departure block
+and generates ground sprint slots plus running overlap constraints before the
+jump to the next block. `run_ticks` on the final block is rejected because there
+is no following jump.
+
+Each segment is generated as:
+
+```text
+run_ticks ground sprint slots
+1 ground sprint-jump slot
+computed sprint-45 air slots
+landing overlap constraints on the target block
+```
+
+The air slot count is derived from mothball's vertical movement tick order, not
+hand-authored. Same-height normal jumps currently produce 11 air slots after the
+jump slot; one-block-up produces 8; one-block-down produces 13. Horizontal
+`Imux`/`Imuz`/`Mmu` arrays are still derived from the generated `movement_plan`
+by the shared movement model.
+
+Solid `avoid_blocks` are top-level and attach to a consecutive segment with
+`between: ["from_landing_id", "to_landing_id"]`. Because avoiding a rectangle is
+an OR of side constraints, routes with avoid blocks write a candidate bundle
+instead of a single exact template. Each candidate chooses per-tick side phases
+around one or two inflated block corners, using the vertical trace to constrain
+only ticks where the player's height overlaps the obstacle.
+
+The intermediate commands are still useful for inspection. Rank an avoid-block
+candidate bundle with a cheap Wolfram pass before running the precise staged
+solve:
+
+```sh
+PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator \
+  score-block-route examples/block_route_demo/block_route_template.json \
+  --out /tmp/block_route_scored.json \
+  --selected-out /tmp/block_route_selected.json
+```
+
+`score-block-route` also accepts the original route input directly. It forces a
+coarse relaxed tolerance on all candidate constraints, defaults to
+`Method -> "NelderMead"` with low accuracy/precision goals, ranks candidates by
+coarse objective, and selects the top/close candidates for the later strict
+staged exact flow. These defaults can be set in route JSON under
+`candidate_selection` (`coarse_tolerance`, `objective_margin`,
+`max_precise_candidates`, and `coarse_optimizer`) and overridden by CLI flags.
+
+Run the precise staged/exact flow over the selected candidates:
+
+```sh
+PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator \
+  solve-block-route-candidates /tmp/block_route_selected.json \
+  --out /tmp/block_route_precise.json \
+  --default-relaxed-tolerance 0.0
+```
+
+The output contains `status`, candidate completion/error counts, strict,
+relaxed, exact-input, and exact-solution payloads for completed candidates, and
+per-candidate error text for failed candidates. `best_candidate_id` is `null`
+when no candidate completes successfully. When `--macro-out-dir` is provided,
+the command also writes one macro CSV per completed candidate.
+
+`examples/block_route_simple/block_route.json` is the successful one-shot smoke
+fixture. `examples/block_route_demo/block_route.json` includes an avoid block
+and is useful for inspecting candidate generation/scoring behavior.
+
 The orchestrator runs the canonical Mathematica optimizer and writes the
 approximate solution JSON with:
 

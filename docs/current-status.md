@@ -175,6 +175,37 @@ unchanged. The solver compiles with
 multiply-add). Mechanics covered and mothball-validated: fluids, inertia
 hit/avoid, wall-hit, slime, ladder clamp, cobweb, sprint delay, sneak, sneak-45.
 
+## Block Route Builder
+
+`python3 -m wolframtas_orchestrator solve-block-route input.json --out result.json`
+is the one-shot block-route flow. It compiles `schemas/block_route_input.schema.json`,
+coarse-scores generated candidates, runs precise staged/exact solving on the
+selected candidates, and reports `best_candidate_id`. Inputs should use
+`landing_blocks` for the ordered platform route; legacy `blocks` is still
+accepted as an alias. The first landing block is the departure/origin block.
+`run_ticks` belong to departure landing blocks and produce running overlap
+constraints; landing constraints are generated on target landing blocks.
+Top-level solid `avoid_blocks` are keyed by `between: [from_landing, to_landing]`;
+the builder uses the vertical jump trace to find overlap ticks and emits a
+candidate bundle of corner/side schedules because block collision avoidance is
+disjunctive. Air slot counts are derived from mothball's vertical jump tick
+order, while horizontal arrays are still derived from the generated
+`movement_plan`.
+
+`score-block-route` runs a fast Wolfram pass over a route input or generated
+candidate bundle. It forces a coarse relaxed tolerance onto all constraints,
+uses low optimizer goals by default, ranks candidates by objective, and writes
+the selected top/near-best candidates for the later precise staged solve.
+`solve-block-route-candidates` then runs the normal strict/relaxed Mathematica
+and exact solver flow over the selected candidates and reports `best_candidate_id`
+from the final exact outputs. Candidate-level Wolfram/exact failures are recorded
+in the result bundle instead of aborting the whole route solve; the bundle status
+is `failed` when no candidate completes.
+`examples/block_route_simple/block_route.json` is a real successful one-shot
+smoke fixture. `examples/block_route_demo/block_route.json` includes a solid
+avoid block and exercises candidate generation/scoring; its current strict
+precise candidates fail and are recorded as candidate errors.
+
 ## Important Invariants
 
 - Mathematica angle variables are movement directions in radians, not final

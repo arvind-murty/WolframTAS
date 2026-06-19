@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from decimal import Decimal
 from typing import Any
 
@@ -82,12 +83,11 @@ def render_mathematica_script(problem: dict[str, Any], *, source_name: str | Non
     lines.append("")
 
     optimizer = problem.get("optimizer", {})
-    accuracy_goal = wolfram_number(optimizer.get("accuracy_goal", 20))
-    precision_goal = wolfram_number(optimizer.get("precision_goal", 20))
+    optimizer_options = wolfram_optimizer_options(optimizer)
     objective_sense = problem["objective"].get("sense", "maximize")
     optimizer_symbol = "NMinimize" if objective_sense == "minimize" else "NMaximize"
-    lines.append(f"sol = {optimizer_symbol}[{{obj, cons}}, F, AccuracyGoal -> {accuracy_goal},")
-    lines.append(f"  PrecisionGoal -> {precision_goal}];")
+    lines.append(f"sol = {optimizer_symbol}[{{obj, cons}}, F,")
+    lines.append(f"  {optimizer_options}];")
     lines.append("fopt = F /. sol[[2]];")
     lines.append("")
     lines.append("points = Table[{X[fopt, t] - X[fopt, 0] + xoff,")
@@ -281,3 +281,29 @@ def wolfram_number(value: Any) -> str:
     if isinstance(value, float):
         return format(Decimal(repr(value)), "f")
     raise ValueError(f"expected numeric value, got {type(value).__name__}")
+
+
+def wolfram_optimizer_options(optimizer: dict[str, Any]) -> str:
+    options = [
+        ("AccuracyGoal", wolfram_number(optimizer.get("accuracy_goal", 20))),
+        ("PrecisionGoal", wolfram_number(optimizer.get("precision_goal", 20))),
+    ]
+    if "working_precision" in optimizer:
+        options.append(("WorkingPrecision", wolfram_precision_value(optimizer["working_precision"])))
+    if "max_iterations" in optimizer:
+        options.append(("MaxIterations", wolfram_number(optimizer["max_iterations"])))
+    if "method" in optimizer:
+        options.append(("Method", wolfram_string(str(optimizer["method"]))))
+    return ",\n  ".join(f"{name} -> {value}" for name, value in options)
+
+
+def wolfram_precision_value(value: Any) -> str:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return wolfram_number(value)
+    if value in {"MachinePrecision", "Automatic"}:
+        return str(value)
+    raise ValueError("optimizer.working_precision must be numeric, MachinePrecision, or Automatic")
+
+
+def wolfram_string(value: str) -> str:
+    return json.dumps(value)

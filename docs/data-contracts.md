@@ -33,6 +33,9 @@ orchestrator derive these arrays:
   bounds; `avoid` requires `direction` and emits one signed lower bound.
 - `objective.expression`: Mathematica expression string.
 - `constraints[*].expression`: Mathematica expression strings.
+- `optimizer`: optional Wolfram optimizer controls. The canonical optimizer
+  currently accepts `accuracy_goal`, `precision_goal`, `working_precision`,
+  `max_iterations`, and `method`.
 
 Slots are 1-based to match Mathematica indexing.
 
@@ -182,6 +185,71 @@ Exact-solver numeric policy:
   `std::sin` on demand instead of storing a table.
 - Degree conversion is output-only for `angles_discrete` diagnostics and macro
   relative yaw deltas.
+
+## Block Route Input
+
+Schema: `schemas/block_route_input.schema.json`
+
+Status: high-level authoring contract that compiles to the existing
+exact-template shape.
+
+The block route input describes an ordered list of axis-aligned landing blocks
+plus optional solid avoid blocks:
+
+- `landing_blocks[0]` is the starting/departure block and defines the relative
+  coordinate origin for generated constraints. Legacy `blocks` is still accepted
+  as an alias.
+- Each following block is a landing target.
+- `x`, `y`, `z` are block lower-corner coordinates; the landing surface is
+  `y + 1`.
+- `width` and `length` default to `1`.
+- `run_ticks` defaults to `defaults.run_ticks` or `0` and belongs to the block
+  being departed from. It is rejected on the final block.
+- `avoid_blocks[*]` are separate solid blocks with `between: [from, to]`
+  identifying the consecutive landing-block segment where they apply. `height`
+  defaults to `1`; optional `corner_hints` and `transition_tick_window` narrow
+  candidate enumeration.
+- `candidate_selection` controls avoid candidate generation and scoring:
+  `max_generated_candidates`, `max_precise_candidates`, `objective_margin`,
+  `coarse_tolerance`, and `coarse_optimizer` (`method`, `accuracy_goal`,
+  `precision_goal`, `max_iterations`). CLI flags can override these values.
+
+For each segment from departure block to target block, the compiler emits:
+
+- `run_ticks` ground sprint movement slots, each with a running
+  `position_bounds` constraint on the departure block.
+- One ground sprint-jump slot.
+- A mothball-vertical-derived number of sprint-45 air slots.
+- One landing `position_bounds` constraint on the target block at the segment end
+  slot.
+
+For avoid blocks, normal block collision is baked into constraints by
+enumerating alternatives. The builder first inflates the avoid rectangle by the
+player half-width and uses the mothball vertical trace to find ticks where the
+player vertical AABB overlaps the block. It then emits candidate templates with
+per-tick side constraints such as `x <= west_edge`, `x >= east_edge`,
+`z <= north_edge`, or `z >= south_edge`. One-corner and two-corner schedules
+produce ordinary conjunctive `position_bounds` constraints, so the existing
+Mathematica and exact-solver contracts do not need native `Or` support.
+
+Candidate bundles can be passed to `score-block-route`, which runs a coarse
+Wolfram solve with forced relaxed constraint tolerance and low optimizer goals,
+then records `coarse_score`, rank, and selected candidate ids. This scoring pass
+is only a pruning/ranking step; final movement directions still come from the
+normal strict/relaxed staged solve on the selected exact templates.
+
+Horizontal block overlap constraints use player-center overlap. For a block
+spanning `[x, x + width]` and `[z, z + length]`, generated bounds are:
+
+```text
+min_x = block.x - 0.3 - origin.x
+max_x = block.x + width + 0.3 - origin.x
+min_z = block.z - 0.3 - origin.z
+max_z = block.z + length + 0.3 - origin.z
+```
+
+The compiler does not hand-author `Imux`, `Imuz`, or `Mmu`; the staged solver
+continues to derive those arrays from the generated `movement_plan`.
 
 ## Macro CSV
 

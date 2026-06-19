@@ -1,0 +1,1370 @@
+{
+  "version": 1,
+  "kind": "block_route_candidate_bundle",
+  "name": "block_route_demo",
+  "candidate_count": 2,
+  "candidates": [
+    {
+      "id": "candidate_001",
+      "avoid_choices": [
+        {
+          "avoid_id": "mid_post",
+          "between": [
+            "middle",
+            "finish"
+          ],
+          "active_slots": [
+            24,
+            25
+          ],
+          "schedule": {
+            "kind": "one_corner",
+            "transition_after_slot": 24,
+            "phases": [
+              {
+                "slots": [
+                  24
+                ],
+                "side": "north"
+              },
+              {
+                "slots": [
+                  25
+                ],
+                "side": "west"
+              }
+            ]
+          },
+          "constraint_count": 2
+        }
+      ],
+      "exact_template": {
+        "version": 1,
+        "name": "block_route_demo_candidate_001",
+        "slot_indexing": "1_based",
+        "n": 25,
+        "angle_domain": {
+          "table_size": 65536
+        },
+        "initial_state": {
+          "position": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "velocity": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "yaw": 0.0,
+          "pitch": 0.0,
+          "on_ground": true
+        },
+        "movement_plan": {
+          "version": 1,
+          "slot_indexing": "1_based",
+          "slots": [
+            {
+              "slot": 1,
+              "kind": "init",
+              "speed": 0.0,
+              "imux": 0.546000063419342,
+              "imuz": 0.546000063419342
+            },
+            {
+              "slot": 2,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 0,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "ground",
+                "input": "no45_forward"
+              },
+              "retention": {
+                "medium": "flat_ground"
+              }
+            },
+            {
+              "slot": 3,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 0,
+                "jump": true,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "ground",
+                "input": "no45_forward"
+              },
+              "retention": {
+                "medium": "flat_ground"
+              }
+            },
+            {
+              "slot": 4,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 5,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 6,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 7,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 8,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 9,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 10,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 11,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 12,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 0,
+                "jump": true,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "ground",
+                "input": "no45_forward"
+              },
+              "retention": {
+                "medium": "flat_ground"
+              }
+            },
+            {
+              "slot": 13,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 14,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 15,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 16,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 17,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 18,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 19,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 20,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 21,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 22,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 23,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 24,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 25,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            }
+          ]
+        },
+        "exact_objective": {
+          "type": "position",
+          "axis": "z",
+          "slot": 25,
+          "sense": "maximize",
+          "expression": "Z[F,25]"
+        },
+        "constraints": [
+          {
+            "id": "run_start_tick_2",
+            "type": "position_bounds",
+            "slot": 2,
+            "min_x": -0.3,
+            "max_x": 1.3,
+            "min_z": -0.3,
+            "max_z": 1.3,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "run tick 1 on start"
+          },
+          {
+            "id": "land_middle_tick_11",
+            "type": "position_bounds",
+            "slot": 11,
+            "min_x": -0.3,
+            "max_x": 1.3,
+            "min_z": 2.7,
+            "max_z": 4.3,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "landing on middle"
+          },
+          {
+            "id": "land_finish_tick_25",
+            "type": "position_bounds",
+            "slot": 25,
+            "min_x": -0.3,
+            "max_x": 1.3,
+            "min_z": 5.7,
+            "max_z": 7.3,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "landing on finish"
+          },
+          {
+            "id": "avoid_mid_post_one_corner_p1_north_tick_24",
+            "type": "position_bounds",
+            "slot": 24,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "avoid mid_post on north side",
+            "max_z": 3.7
+          },
+          {
+            "id": "avoid_mid_post_one_corner_p2_west_tick_25",
+            "type": "position_bounds",
+            "slot": 25,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "avoid mid_post on west side",
+            "max_x": -0.3
+          }
+        ],
+        "annotations": [
+          {
+            "kind": "block_route",
+            "origin_block": "start",
+            "landing_blocks": [
+              {
+                "kind": "landing",
+                "id": "start",
+                "x": 0.0,
+                "y": 64.0,
+                "z": 0.0,
+                "width": 1.0,
+                "length": 1.0,
+                "run_ticks": 1
+              },
+              {
+                "kind": "landing",
+                "id": "middle",
+                "x": 0.0,
+                "y": 65.0,
+                "z": 3.0,
+                "width": 1.0,
+                "length": 1.0,
+                "run_ticks": 0
+              },
+              {
+                "kind": "landing",
+                "id": "finish",
+                "x": 0.0,
+                "y": 64.0,
+                "z": 6.0,
+                "width": 1.0,
+                "length": 1.0,
+                "run_ticks": 0
+              }
+            ],
+            "avoid_blocks": [
+              {
+                "kind": "avoid",
+                "id": "mid_post",
+                "x": 0.0,
+                "y": 65.0,
+                "z": 4.0,
+                "width": 1.0,
+                "length": 1.0,
+                "height": 1.0,
+                "between": [
+                  "middle",
+                  "finish"
+                ],
+                "corner_hints": [
+                  "north_west"
+                ],
+                "transition_tick_window": null
+              }
+            ]
+          },
+          {
+            "kind": "block_route_segment",
+            "from": "start",
+            "to": "middle",
+            "run_ticks": 1,
+            "jump_slot": 3,
+            "air_ticks": 8
+          },
+          {
+            "kind": "block_route_segment",
+            "from": "middle",
+            "to": "finish",
+            "run_ticks": 0,
+            "jump_slot": 12,
+            "air_ticks": 13
+          },
+          {
+            "kind": "block_route_candidate",
+            "candidate_id": "candidate_001",
+            "avoid_choices": [
+              {
+                "avoid_id": "mid_post",
+                "between": [
+                  "middle",
+                  "finish"
+                ],
+                "active_slots": [
+                  24,
+                  25
+                ],
+                "schedule": {
+                  "kind": "one_corner",
+                  "transition_after_slot": 24,
+                  "phases": [
+                    {
+                      "slots": [
+                        24
+                      ],
+                      "side": "north"
+                    },
+                    {
+                      "slots": [
+                        25
+                      ],
+                      "side": "west"
+                    }
+                  ]
+                },
+                "constraint_count": 2
+              }
+            ]
+          }
+        ],
+        "solver": {
+          "default_relaxed_tolerance": 0.0,
+          "solution_tolerance": 0.001
+        }
+      }
+    },
+    {
+      "id": "candidate_002",
+      "avoid_choices": [
+        {
+          "avoid_id": "mid_post",
+          "between": [
+            "middle",
+            "finish"
+          ],
+          "active_slots": [
+            24,
+            25
+          ],
+          "schedule": {
+            "kind": "one_corner",
+            "transition_after_slot": 24,
+            "phases": [
+              {
+                "slots": [
+                  24
+                ],
+                "side": "west"
+              },
+              {
+                "slots": [
+                  25
+                ],
+                "side": "north"
+              }
+            ]
+          },
+          "constraint_count": 2
+        }
+      ],
+      "exact_template": {
+        "version": 1,
+        "name": "block_route_demo_candidate_002",
+        "slot_indexing": "1_based",
+        "n": 25,
+        "angle_domain": {
+          "table_size": 65536
+        },
+        "initial_state": {
+          "position": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "velocity": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "yaw": 0.0,
+          "pitch": 0.0,
+          "on_ground": true
+        },
+        "movement_plan": {
+          "version": 1,
+          "slot_indexing": "1_based",
+          "slots": [
+            {
+              "slot": 1,
+              "kind": "init",
+              "speed": 0.0,
+              "imux": 0.546000063419342,
+              "imuz": 0.546000063419342
+            },
+            {
+              "slot": 2,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 0,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "ground",
+                "input": "no45_forward"
+              },
+              "retention": {
+                "medium": "flat_ground"
+              }
+            },
+            {
+              "slot": 3,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 0,
+                "jump": true,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "ground",
+                "input": "no45_forward"
+              },
+              "retention": {
+                "medium": "flat_ground"
+              }
+            },
+            {
+              "slot": 4,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 5,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 6,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 7,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 8,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 9,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 10,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 11,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 12,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 0,
+                "jump": true,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "ground",
+                "input": "no45_forward"
+              },
+              "retention": {
+                "medium": "flat_ground"
+              }
+            },
+            {
+              "slot": 13,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 14,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 15,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 16,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 17,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 18,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 19,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 20,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 21,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 22,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 23,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 24,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            },
+            {
+              "slot": 25,
+              "kind": "movement",
+              "controls": {
+                "forward": 1,
+                "strafe": 1,
+                "jump": false,
+                "sneak": false,
+                "sprint": true
+              },
+              "acceleration": {
+                "medium": "air",
+                "input": "forward_45"
+              },
+              "retention": {
+                "medium": "air"
+              }
+            }
+          ]
+        },
+        "exact_objective": {
+          "type": "position",
+          "axis": "z",
+          "slot": 25,
+          "sense": "maximize",
+          "expression": "Z[F,25]"
+        },
+        "constraints": [
+          {
+            "id": "run_start_tick_2",
+            "type": "position_bounds",
+            "slot": 2,
+            "min_x": -0.3,
+            "max_x": 1.3,
+            "min_z": -0.3,
+            "max_z": 1.3,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "run tick 1 on start"
+          },
+          {
+            "id": "land_middle_tick_11",
+            "type": "position_bounds",
+            "slot": 11,
+            "min_x": -0.3,
+            "max_x": 1.3,
+            "min_z": 2.7,
+            "max_z": 4.3,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "landing on middle"
+          },
+          {
+            "id": "land_finish_tick_25",
+            "type": "position_bounds",
+            "slot": 25,
+            "min_x": -0.3,
+            "max_x": 1.3,
+            "min_z": 5.7,
+            "max_z": 7.3,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "landing on finish"
+          },
+          {
+            "id": "avoid_mid_post_one_corner_p1_west_tick_24",
+            "type": "position_bounds",
+            "slot": 24,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "avoid mid_post on west side",
+            "max_x": -0.3
+          },
+          {
+            "id": "avoid_mid_post_one_corner_p2_north_tick_25",
+            "type": "position_bounds",
+            "slot": 25,
+            "mathematica_tolerance": 0.0,
+            "exact_tolerance": 0.0,
+            "reason": "avoid mid_post on north side",
+            "max_z": 3.7
+          }
+        ],
+        "annotations": [
+          {
+            "kind": "block_route",
+            "origin_block": "start",
+            "landing_blocks": [
+              {
+                "kind": "landing",
+                "id": "start",
+                "x": 0.0,
+                "y": 64.0,
+                "z": 0.0,
+                "width": 1.0,
+                "length": 1.0,
+                "run_ticks": 1
+              },
+              {
+                "kind": "landing",
+                "id": "middle",
+                "x": 0.0,
+                "y": 65.0,
+                "z": 3.0,
+                "width": 1.0,
+                "length": 1.0,
+                "run_ticks": 0
+              },
+              {
+                "kind": "landing",
+                "id": "finish",
+                "x": 0.0,
+                "y": 64.0,
+                "z": 6.0,
+                "width": 1.0,
+                "length": 1.0,
+                "run_ticks": 0
+              }
+            ],
+            "avoid_blocks": [
+              {
+                "kind": "avoid",
+                "id": "mid_post",
+                "x": 0.0,
+                "y": 65.0,
+                "z": 4.0,
+                "width": 1.0,
+                "length": 1.0,
+                "height": 1.0,
+                "between": [
+                  "middle",
+                  "finish"
+                ],
+                "corner_hints": [
+                  "north_west"
+                ],
+                "transition_tick_window": null
+              }
+            ]
+          },
+          {
+            "kind": "block_route_segment",
+            "from": "start",
+            "to": "middle",
+            "run_ticks": 1,
+            "jump_slot": 3,
+            "air_ticks": 8
+          },
+          {
+            "kind": "block_route_segment",
+            "from": "middle",
+            "to": "finish",
+            "run_ticks": 0,
+            "jump_slot": 12,
+            "air_ticks": 13
+          },
+          {
+            "kind": "block_route_candidate",
+            "candidate_id": "candidate_002",
+            "avoid_choices": [
+              {
+                "avoid_id": "mid_post",
+                "between": [
+                  "middle",
+                  "finish"
+                ],
+                "active_slots": [
+                  24,
+                  25
+                ],
+                "schedule": {
+                  "kind": "one_corner",
+                  "transition_after_slot": 24,
+                  "phases": [
+                    {
+                      "slots": [
+                        24
+                      ],
+                      "side": "west"
+                    },
+                    {
+                      "slots": [
+                        25
+                      ],
+                      "side": "north"
+                    }
+                  ]
+                },
+                "constraint_count": 2
+              }
+            ]
+          }
+        ],
+        "solver": {
+          "default_relaxed_tolerance": 0.0,
+          "solution_tolerance": 0.001
+        }
+      }
+    }
+  ]
+}
