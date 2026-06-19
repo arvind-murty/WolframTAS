@@ -682,7 +682,15 @@ def score_candidate_bundle(
         with tempfile.TemporaryDirectory(prefix="wolframtas-score-") as directory:
             problem_input = Path(directory) / f"{candidate['id']}.json"
             problem_input.write_text(json.dumps(materialize_mathematica_problem(problem)), encoding="utf-8")
-            solution = run_wolfram_file(wolframscript, optimizer_script, problem_input)
+            try:
+                solution = run_wolfram_file(wolframscript, optimizer_script, problem_input)
+            except Exception as exc:
+                candidate["coarse_score"] = {
+                    "status": "error",
+                    "constraint_tolerance": coarse_tolerance,
+                    "error": str(exc),
+                }
+                continue
         candidate["coarse_solution"] = solution
         candidate["coarse_score"] = {
             "status": solution.get("status", "unknown"),
@@ -703,7 +711,10 @@ def select_scored_candidates(
 ) -> list[dict[str, Any]]:
     if max_precise_candidates <= 0:
         raise ValueError("max_precise_candidates must be > 0")
-    candidates = _rank_scored_candidates(scored_bundle.get("candidates", []))
+    candidates = [
+        candidate for candidate in _rank_scored_candidates(scored_bundle.get("candidates", []))
+        if "objective_value" in candidate.get("coarse_score", {})
+    ]
     if not candidates:
         return []
     sense = candidates[0]["exact_template"].get("exact_objective", {}).get("sense", "maximize")
@@ -719,11 +730,14 @@ def select_scored_candidates(
 
 
 def _rank_scored_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if not candidates:
+    scored = [candidate for candidate in candidates if "objective_value" in candidate.get("coarse_score", {})]
+    if not scored:
         return []
-    sense = candidates[0]["exact_template"].get("exact_objective", {}).get("sense", "maximize")
+    sense = scored[0]["exact_template"].get("exact_objective", {}).get("sense", "maximize")
     reverse = sense == "maximize"
-    return sorted(candidates, key=lambda item: float(item["coarse_score"]["objective_value"]), reverse=reverse)
+    ranked = sorted(scored, key=lambda item: float(item["coarse_score"]["objective_value"]), reverse=reverse)
+    errors = [candidate for candidate in candidates if "objective_value" not in candidate.get("coarse_score", {})]
+    return ranked + errors
 
 
 def select_best_precise_result(results: list[dict[str, Any]]) -> dict[str, Any] | None:

@@ -327,6 +327,73 @@ def test_score_block_route_cli_ranks_and_selects_candidates(tmp_path: Path) -> N
     assert selected["candidates"][0]["id"] == "candidate_002"
 
 
+def test_score_block_route_cli_continues_after_candidate_score_error(tmp_path: Path) -> None:
+    route = tmp_path / "route.json"
+    scored_out = tmp_path / "scored.json"
+    selected_out = tmp_path / "selected.json"
+    fake_wolframscript = tmp_path / "fake_wolframscript"
+    route.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "name": "score_error_route",
+                "landing_blocks": [
+                    {"id": "start", "x": 0, "y": 64, "z": 0},
+                    {"id": "finish", "x": 0, "y": 64, "z": 6},
+                ],
+                "avoid_blocks": [
+                    {
+                        "id": "post",
+                        "x": 0,
+                        "y": 65,
+                        "z": 3,
+                        "between": ["start", "finish"],
+                        "corner_hints": ["north_west"],
+                    }
+                ],
+                "candidate_selection": {"max_generated_candidates": 2},
+            }
+        ),
+        encoding="utf-8",
+    )
+    fake_wolframscript.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "problem = json.load(open(sys.argv[3]))\n"
+        "if problem['name'].endswith('candidate_001'):\n"
+        "    print(json.dumps({'version': 1, 'status': 'error', 'diagnostics': {'message': 'bad coarse'}}))\n"
+        "    sys.exit(1)\n"
+        "print(json.dumps({\n"
+        "  'version': 1,\n"
+        "  'status': 'optimal',\n"
+        "  'objective_value': 10.0,\n"
+        "  'movement_directions': [{'slot': i + 1, 'radians': 0.0} for i in range(problem['n'])]\n"
+        "}))\n",
+        encoding="utf-8",
+    )
+    fake_wolframscript.chmod(0o755)
+
+    assert main([
+        "score-block-route",
+        str(route),
+        "--out",
+        str(scored_out),
+        "--selected-out",
+        str(selected_out),
+        "--wolframscript",
+        str(fake_wolframscript),
+        "--max-precise-candidates",
+        "1",
+    ]) == 0
+
+    scored = json.loads(scored_out.read_text(encoding="utf-8"))
+    selected = json.loads(selected_out.read_text(encoding="utf-8"))
+    assert scored["candidates"][0]["id"] == "candidate_002"
+    assert scored["candidates"][1]["coarse_score"]["status"] == "error"
+    assert scored["selection"]["selected_candidate_ids"] == ["candidate_002"]
+    assert selected["candidate_count"] == 1
+
+
 def test_solve_block_route_candidates_cli_runs_selected_precise_candidates(tmp_path: Path) -> None:
     selected = tmp_path / "selected.json"
     output = tmp_path / "precise.json"
