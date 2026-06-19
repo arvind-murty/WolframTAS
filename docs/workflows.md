@@ -133,7 +133,7 @@ solver:
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator \
   build-block-route examples/block_route_demo/block_route.json \
-  --out examples/block_route_demo/block_route_template.json
+  --out /tmp/block_route_template.json
 ```
 
 For the normal end-to-end route solve, use the one-shot command:
@@ -175,13 +175,13 @@ instead of a single exact template. Each candidate chooses per-tick side phases
 around one or two inflated block corners, using the vertical trace to constrain
 only ticks where the player's height overlaps the obstacle.
 
-The intermediate commands are still useful for inspection. Rank an avoid-block
-candidate bundle with a cheap Wolfram pass before running the precise staged
-solve:
+The intermediate commands are still useful for inspection. Rank a route input or
+generated candidate bundle with a cheap Wolfram pass before running the precise
+staged solve:
 
 ```sh
 PYTHONPATH=orchestrator .venv-oracle/bin/python -m wolframtas_orchestrator \
-  score-block-route examples/block_route_demo/block_route_template.json \
+  score-block-route examples/block_route_demo/block_route.json \
   --out /tmp/block_route_scored.json \
   --selected-out /tmp/block_route_selected.json
 ```
