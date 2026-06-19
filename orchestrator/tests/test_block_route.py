@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
 from wolframtas_orchestrator.block_route import block_route_to_candidate_bundle, block_route_to_exact_template
 from wolframtas_orchestrator.cli import main
+from wolframtas_orchestrator.python_solver import solve
 from wolframtas_orchestrator.vertical_model import jump_air_ticks
 
 
@@ -126,18 +128,51 @@ def test_block_route_avoid_blocks_generate_candidate_bundle() -> None:
     )
 
     assert bundle["kind"] == "block_route_candidate_bundle"
-    assert bundle["candidate_count"] == 2
+    assert bundle["candidate_count"] == 9
     choices = [candidate["avoid_choices"][0] for candidate in bundle["candidates"]]
     assert all(choice["active_slots"] == [3, 4] for choice in choices)
-    assert {choice["schedule"]["phases"][0]["side"] for choice in choices} == {"north", "west"}
+    assert choices[0]["schedule"]["kind"] == "route_transition"
+    assert [phase["side"] for phase in choices[0]["schedule"]["phases"]] == ["north", "south"]
 
     first_constraints = {
         constraint["id"]: constraint
         for constraint in bundle["candidates"][0]["exact_template"]["constraints"]
         if constraint["id"].startswith("avoid_")
     }
-    assert first_constraints["avoid_post_one_corner_p1_north_tick_3"]["max_z"] == 2.7
-    assert first_constraints["avoid_post_one_corner_p2_west_tick_4"]["max_x"] == -0.3
+    assert first_constraints["avoid_post_route_transition_p1_north_tick_3"]["max_z"] == 2.7
+    assert first_constraints["avoid_post_route_transition_p2_south_tick_4"]["min_z"] == 4.3
+
+
+def test_block_route_demo_has_feasible_avoid_candidate() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    route = json.loads((repo_root / "examples/block_route_demo/block_route.json").read_text(encoding="utf-8"))
+    bundle = block_route_to_candidate_bundle(route)
+    candidate = next(
+        item for item in bundle["candidates"]
+        if item["avoid_choices"][0]["schedule"].get("transition_after_slot") == 14
+        and [phase["side"] for phase in item["avoid_choices"][0]["schedule"]["phases"]] == ["north", "south"]
+    )
+    exact_template = candidate["exact_template"]
+    directions = []
+    for slot in range(1, exact_template["n"] + 1):
+        radians = 0.0
+        if 12 <= slot <= 14:
+            radians = math.radians(-32)
+        elif 15 <= slot <= exact_template["n"]:
+            radians = math.radians(76)
+        directions.append({"slot": slot, "radians": radians})
+    exact_template["optimal_solution"] = {
+        "status": "seed",
+        "objective_value": 5.958334226758805,
+        "movement_directions": directions,
+    }
+    exact_template["exact_objective"]["target_value"] = 5.958334226758805
+    exact_template["exact_objective"]["solution_tolerance"] = 1.0
+
+    solution = solve(exact_template)
+
+    assert solution["status"] == "solved"
+    assert solution["diagnostics"]["final_residual_norm"] == "0.0"
 
 
 def test_block_route_rejects_avoid_blocks_between_nonconsecutive_landings() -> None:
@@ -402,6 +437,66 @@ def test_solve_block_route_candidates_cli_continues_after_candidate_error(tmp_pa
     assert payload["results"][0]["status"] == "error"
     assert "bad candidate" in payload["results"][0]["error"]
     assert payload["results"][1]["status"] == "completed"
+
+
+def test_solve_block_route_candidates_falls_back_to_coarse_solution(tmp_path: Path) -> None:
+    selected = tmp_path / "selected.json"
+    output = tmp_path / "precise.json"
+    fake_wolframscript = tmp_path / "fake_wolframscript"
+    template = _tiny_exact_template("candidate_001", 0.2)
+    selected.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "kind": "selected_block_route_candidates",
+                "name": "coarse_fallback_route",
+                "candidate_count": 1,
+                "candidates": [
+                    {
+                        "id": "candidate_001",
+                        "avoid_choices": [],
+                        "coarse_score": {"objective_value": 0.2},
+                        "coarse_solution": {
+                            "version": 1,
+                            "status": "optimal",
+                            "objective_value": 0.2,
+                            "movement_directions": [{"slot": 1, "radians": 0.0}],
+                        },
+                        "exact_template": template,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    fake_wolframscript.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "_problem = json.load(open(sys.argv[3]))\n"
+        "print(json.dumps({'version': 1, 'status': 'error', 'diagnostics': {'message': 'strict failed'}}))\n"
+        "sys.exit(1)\n",
+        encoding="utf-8",
+    )
+    fake_wolframscript.chmod(0o755)
+
+    assert main([
+        "solve-block-route-candidates",
+        str(selected),
+        "--out",
+        str(output),
+        "--wolframscript",
+        str(fake_wolframscript),
+        "--default-relaxed-tolerance",
+        "0.0",
+    ]) == 0
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["status"] == "solved"
+    assert payload["completed_candidate_count"] == 1
+    assert payload["error_candidate_count"] == 0
+    assert payload["best_candidate_id"] == "candidate_001"
+    assert payload["results"][0]["status"] == "completed_from_coarse"
+    assert payload["results"][0]["exact_solution"]["status"] == "solved"
 
 
 def test_solve_block_route_cli_runs_full_one_shot_flow(tmp_path: Path) -> None:

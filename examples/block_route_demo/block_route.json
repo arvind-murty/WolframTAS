@@ -20,7 +20,7 @@
       "id": "middle",
       "x": 0,
       "y": 65,
-      "z": 3,
+      "z": 2.5,
       "width": 1,
       "length": 1
     },
@@ -39,7 +39,7 @@
       "kind": "avoid",
       "id": "mid_post",
       "x": 0,
-      "y": 65,
+      "y": 66,
       "z": 4,
       "width": 1,
       "length": 1,
@@ -49,8 +49,8 @@
     }
   ],
   "candidate_selection": {
-    "max_generated_candidates": 32,
-    "max_precise_candidates": 3,
+    "max_generated_candidates": 16,
+    "max_precise_candidates": 16,
     "objective_margin": 0.02,
     "coarse_tolerance": 0.03,
     "coarse_optimizer": {

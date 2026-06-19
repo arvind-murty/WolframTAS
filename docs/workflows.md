@@ -208,10 +208,15 @@ relaxed, exact-input, and exact-solution payloads for completed candidates, and
 per-candidate error text for failed candidates. `best_candidate_id` is `null`
 when no candidate completes successfully. When `--macro-out-dir` is provided,
 the command also writes one macro CSV per completed candidate.
+If strict Wolfram fails for a candidate but the scored bundle contains a numeric
+coarse solution, the precise runner seeds the exact solver from that coarse
+solution and marks the result `completed_from_coarse`; the exact solver still
+performs the final strict constraint validation/repair.
 
 `examples/block_route_simple/block_route.json` is the successful one-shot smoke
 fixture. `examples/block_route_demo/block_route.json` includes an avoid block
-and is useful for inspecting candidate generation/scoring behavior.
+and has a tested feasible route-transition candidate for inspecting
+candidate-generation/scoring behavior.
 
 The orchestrator runs the canonical Mathematica optimizer and writes the
 approximate solution JSON with:

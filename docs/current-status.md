@@ -201,10 +201,12 @@ and exact solver flow over the selected candidates and reports `best_candidate_i
 from the final exact outputs. Candidate-level Wolfram/exact failures are recorded
 in the result bundle instead of aborting the whole route solve; the bundle status
 is `failed` when no candidate completes.
+If a strict candidate solve fails but the candidate has a numeric coarse
+solution, the precise runner seeds the exact solver from that coarse solution and
+marks the candidate `completed_from_coarse`.
 `examples/block_route_simple/block_route.json` is a real successful one-shot
 smoke fixture. `examples/block_route_demo/block_route.json` includes a solid
-avoid block and exercises candidate generation/scoring; its current strict
-precise candidates fail and are recorded as candidate errors.
+avoid block and has a tested feasible north-to-south route-transition candidate.
 
 ## Important Invariants
 

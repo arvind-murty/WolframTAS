@@ -11,16 +11,7 @@ from .vertical_model import jump_air_ticks, vertical_trace
 PLAYER_HALF_WIDTH = 0.3
 PLAYER_HEIGHT = 1.8
 SIDE_ORDER = ("west", "east", "north", "south")
-CORNER_SIDE_PAIRS = (
-    ("north", "west"),
-    ("west", "north"),
-    ("north", "east"),
-    ("east", "north"),
-    ("south", "west"),
-    ("west", "south"),
-    ("south", "east"),
-    ("east", "south"),
-)
+TRANSITION_SIDE_PAIRS = tuple((a, b) for a in SIDE_ORDER for b in SIDE_ORDER if a != b)
 TWO_CORNER_SIDE_TRIPLES = (
     ("north", "west", "south"),
     ("south", "west", "north"),
@@ -314,6 +305,7 @@ def _candidate_templates(
         return [{"id": "base", "avoid_choices": [], "exact_template": base_template}]
 
     segment_by_pair = {(segment["from"], segment["to"]): segment for segment in segment_infos}
+    landing_by_id = {block["id"]: block for block in landing_blocks}
     landing_ids = {block["id"] for block in landing_blocks}
     per_avoid_options: list[list[dict[str, Any]]] = []
     for avoid in avoid_blocks:
@@ -324,7 +316,8 @@ def _candidate_templates(
         if segment is None:
             raise ValueError(f"avoid block {avoid['id']} must be between consecutive landing blocks")
         active_slots = _active_collision_slots(avoid, segment)
-        schedules = _avoid_schedules(avoid, active_slots)
+        endpoint_sides = _route_endpoint_sides(avoid, landing_by_id[from_id], landing_by_id[to_id], origin)
+        schedules = _avoid_schedules(avoid, active_slots, endpoint_sides=endpoint_sides)
         per_avoid_options.append([
             {
                 "avoid_id": avoid["id"],
@@ -398,41 +391,57 @@ def _intervals_overlap(a_min: float, a_max: float, b_min: float, b_max: float) -
     return a_min < b_max and b_min < a_max
 
 
-def _avoid_schedules(avoid: dict[str, Any], active_slots: list[int]) -> list[dict[str, Any]]:
+def _avoid_schedules(
+    avoid: dict[str, Any],
+    active_slots: list[int],
+    *,
+    endpoint_sides: tuple[str | None, str | None] = (None, None),
+) -> list[dict[str, Any]]:
     if not active_slots:
         return [{"kind": "inactive", "phases": []}]
 
     schedules: list[dict[str, Any]] = []
+    seen: set[tuple[tuple[str, tuple[int, ...]], ...]] = set()
     hints = set(avoid.get("corner_hints", []))
+    allowed_hint_sides = _allowed_hint_sides(hints, endpoint_sides)
 
     def include_sides(sides: tuple[str, ...]) -> bool:
-        if not hints:
+        if not allowed_hint_sides:
             return True
-        side_set = set(sides)
-        corner_names = {
-            "north_west": {"north", "west"},
-            "north_east": {"north", "east"},
-            "south_west": {"south", "west"},
-            "south_east": {"south", "east"},
-        }
-        for hint in hints:
-            if hint in side_set:
-                return True
-            if hint in corner_names and corner_names[hint].issubset(side_set):
-                return True
-        return False
+        return set(sides).issubset(allowed_hint_sides)
+
+    def add_schedule(schedule: dict[str, Any]) -> None:
+        key = tuple((phase["side"], tuple(phase["slots"])) for phase in schedule["phases"])
+        if key not in seen:
+            seen.add(key)
+            schedules.append(schedule)
+
+    start_side, end_side = endpoint_sides
+    if start_side and end_side:
+        if start_side == end_side:
+            add_schedule({"kind": "route_side", "phases": [{"slots": active_slots, "side": start_side}]})
+        elif len(active_slots) >= 2:
+            for split_index in range(1, len(active_slots)):
+                add_schedule({
+                    "kind": "route_transition",
+                    "transition_after_slot": active_slots[split_index - 1],
+                    "phases": [
+                        {"slots": active_slots[:split_index], "side": start_side},
+                        {"slots": active_slots[split_index:], "side": end_side},
+                    ],
+                })
 
     for side in SIDE_ORDER:
         if include_sides((side,)):
-            schedules.append({"kind": "single_side", "phases": [{"slots": active_slots, "side": side}]})
+            add_schedule({"kind": "single_side", "phases": [{"slots": active_slots, "side": side}]})
 
     if len(active_slots) >= 2:
-        for side_a, side_b in CORNER_SIDE_PAIRS:
+        for side_a, side_b in TRANSITION_SIDE_PAIRS:
             if not include_sides((side_a, side_b)):
                 continue
             for split_index in range(1, len(active_slots)):
-                schedules.append({
-                    "kind": "one_corner",
+                add_schedule({
+                    "kind": "one_transition",
                     "transition_after_slot": active_slots[split_index - 1],
                     "phases": [
                         {"slots": active_slots[:split_index], "side": side_a},
@@ -446,7 +455,7 @@ def _avoid_schedules(avoid: dict[str, Any], active_slots: list[int]) -> list[dic
                 continue
             for first_split in range(1, len(active_slots) - 1):
                 for second_split in range(first_split + 1, len(active_slots)):
-                    schedules.append({
+                    add_schedule({
                         "kind": "two_corner",
                         "transition_after_slots": [
                             active_slots[first_split - 1],
@@ -460,6 +469,58 @@ def _avoid_schedules(avoid: dict[str, Any], active_slots: list[int]) -> list[dic
                     })
 
     return schedules
+
+
+def _route_endpoint_sides(
+    avoid: dict[str, Any],
+    departure: dict[str, Any],
+    target: dict[str, Any],
+    origin: dict[str, Any],
+) -> tuple[str | None, str | None]:
+    min_x, max_x, min_z, max_z = _overlap_bounds(avoid, origin)
+    return (
+        _point_side(_block_center_x(departure, origin), _block_center_z(departure, origin), min_x, max_x, min_z, max_z),
+        _point_side(_block_center_x(target, origin), _block_center_z(target, origin), min_x, max_x, min_z, max_z),
+    )
+
+
+def _block_center_x(block: dict[str, Any], origin: dict[str, Any]) -> float:
+    return float(block["x"]) + float(block["width"]) / 2.0 - float(origin["x"])
+
+
+def _block_center_z(block: dict[str, Any], origin: dict[str, Any]) -> float:
+    return float(block["z"]) + float(block["length"]) / 2.0 - float(origin["z"])
+
+
+def _point_side(x: float, z: float, min_x: float, max_x: float, min_z: float, max_z: float) -> str | None:
+    candidates: list[tuple[float, str]] = []
+    if x <= min_x:
+        candidates.append((min_x - x, "west"))
+    if x >= max_x:
+        candidates.append((x - max_x, "east"))
+    if z <= min_z:
+        candidates.append((min_z - z, "north"))
+    if z >= max_z:
+        candidates.append((z - max_z, "south"))
+    if not candidates:
+        return None
+    return max(candidates)[1]
+
+
+def _allowed_hint_sides(hints: set[str], endpoint_sides: tuple[str | None, str | None]) -> set[str]:
+    allowed = {side for side in endpoint_sides if side is not None}
+    corner_names = {
+        "north_west": {"north", "west"},
+        "north_east": {"north", "east"},
+        "south_west": {"south", "west"},
+        "south_east": {"south", "east"},
+    }
+    for hint in hints:
+        if hint in SIDE_ORDER:
+            allowed.add(hint)
+        elif hint in corner_names:
+            allowed.update(corner_names[hint])
+    return allowed
 
 
 def _avoid_constraints(avoid: dict[str, Any], schedule: dict[str, Any], origin: dict[str, Any]) -> list[dict[str, Any]]:

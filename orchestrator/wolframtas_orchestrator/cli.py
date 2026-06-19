@@ -621,17 +621,27 @@ def solve_candidate_bundle_precise(
                 "macro_csv": str(macro_csv_out) if macro_csv_out is not None else None,
             })
         except Exception as exc:
-            results.append({
-                "id": candidate["id"],
-                "status": "error",
-                "avoid_choices": copy.deepcopy(candidate.get("avoid_choices", [])),
-                "coarse_score": copy.deepcopy(candidate.get("coarse_score")),
-                "error": str(exc),
-                "macro_csv": None,
-            })
+            fallback = solve_candidate_from_coarse_solution(
+                candidate,
+                exact_template,
+                coarse_error=str(exc),
+                solution_tolerance=candidate_solution_tolerance,
+                macro_csv_out=macro_csv_out,
+            )
+            if fallback is not None:
+                results.append(fallback)
+            else:
+                results.append({
+                    "id": candidate["id"],
+                    "status": "error",
+                    "avoid_choices": copy.deepcopy(candidate.get("avoid_choices", [])),
+                    "coarse_score": copy.deepcopy(candidate.get("coarse_score")),
+                    "error": str(exc),
+                    "macro_csv": None,
+                })
 
     best = select_best_precise_result(results)
-    completed_count = sum(1 for result in results if result.get("status") == "completed")
+    completed_count = sum(1 for result in results if str(result.get("status", "")).startswith("completed"))
     return {
         "version": 1,
         "kind": "precise_block_route_candidate_results",
@@ -717,7 +727,7 @@ def _rank_scored_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, 
 
 
 def select_best_precise_result(results: list[dict[str, Any]]) -> dict[str, Any] | None:
-    completed = [result for result in results if result.get("status") == "completed"]
+    completed = [result for result in results if str(result.get("status", "")).startswith("completed")]
     if not completed:
         return None
     sense = completed[0]["exact_input"].get("exact_objective", {}).get("sense", "maximize")
@@ -732,6 +742,42 @@ def precise_result_objective_value(result: dict[str, Any]) -> float:
     if "exact_objective_value" in diagnostics:
         return float(diagnostics["exact_objective_value"])
     return float(result["relaxed_solution"]["objective_value"])
+
+
+def solve_candidate_from_coarse_solution(
+    candidate: dict[str, Any],
+    exact_template: dict[str, Any],
+    *,
+    coarse_error: str,
+    solution_tolerance: float,
+    macro_csv_out: Path | None,
+) -> dict[str, Any] | None:
+    coarse_solution = candidate.get("coarse_solution")
+    if not isinstance(coarse_solution, dict) or not coarse_solution.get("movement_directions"):
+        return None
+    exact_input = build_exact_solver_input(exact_template, coarse_solution, solution_tolerance)
+    from .python_solver import solve as _py_solve, write_macro_csv as _write_csv
+
+    exact_solution = _py_solve(exact_input)
+    if macro_csv_out is not None:
+        macro_csv_out.parent.mkdir(parents=True, exist_ok=True)
+        _write_csv(macro_csv_out, exact_solution)
+    return {
+        "id": candidate["id"],
+        "status": "completed_from_coarse",
+        "avoid_choices": copy.deepcopy(candidate.get("avoid_choices", [])),
+        "coarse_score": copy.deepcopy(candidate.get("coarse_score")),
+        "strict_solution": {
+            "version": 1,
+            "status": "error",
+            "diagnostics": {"message": coarse_error},
+        },
+        "relaxed_solution": coarse_solution,
+        "exact_input": exact_input,
+        "exact_solution": exact_solution,
+        "macro_csv": str(macro_csv_out) if macro_csv_out is not None else None,
+        "fallback_reason": "strict Wolfram failed; exact solver seeded from coarse solution",
+    }
 
 
 def parse_cli_constraints(constraint_json: list[str], constraints_file: Path | None) -> list[dict[str, Any]]:
