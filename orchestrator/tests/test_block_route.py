@@ -499,6 +499,67 @@ def test_solve_block_route_candidates_falls_back_to_coarse_solution(tmp_path: Pa
     assert payload["results"][0]["exact_solution"]["status"] == "solved"
 
 
+def test_solve_block_route_candidates_does_not_select_failed_exact_result(tmp_path: Path) -> None:
+    selected = tmp_path / "selected.json"
+    output = tmp_path / "precise.json"
+    fake_wolframscript = tmp_path / "fake_wolframscript"
+    template = _tiny_exact_template("candidate_001", 0.2)
+    template["constraints"] = [
+        {"id": "impossible", "type": "position_bounds", "slot": 1, "min_z": 100.0}
+    ]
+    selected.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "kind": "selected_block_route_candidates",
+                "name": "failed_exact_route",
+                "candidate_count": 1,
+                "candidates": [
+                    {
+                        "id": "candidate_001",
+                        "avoid_choices": [],
+                        "coarse_score": {"objective_value": 0.2},
+                        "coarse_solution": {
+                            "version": 1,
+                            "status": "optimal",
+                            "objective_value": 0.2,
+                            "movement_directions": [{"slot": 1, "radians": 0.0}],
+                        },
+                        "exact_template": template,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    fake_wolframscript.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "_problem = json.load(open(sys.argv[3]))\n"
+        "print(json.dumps({'version': 1, 'status': 'error', 'diagnostics': {'message': 'strict failed'}}))\n"
+        "sys.exit(1)\n",
+        encoding="utf-8",
+    )
+    fake_wolframscript.chmod(0o755)
+
+    assert main([
+        "solve-block-route-candidates",
+        str(selected),
+        "--out",
+        str(output),
+        "--wolframscript",
+        str(fake_wolframscript),
+        "--default-relaxed-tolerance",
+        "0.0",
+    ]) == 0
+
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["status"] == "failed"
+    assert payload["best_candidate_id"] is None
+    assert payload["completed_candidate_count"] == 1
+    assert payload["results"][0]["exact_solution"]["status"] == "failed"
+
+
 def test_solve_block_route_cli_runs_full_one_shot_flow(tmp_path: Path) -> None:
     route = tmp_path / "route.json"
     output = tmp_path / "result.json"
@@ -584,8 +645,8 @@ def test_solve_block_route_cli_runs_full_one_shot_flow(tmp_path: Path) -> None:
     assert build_out.exists()
     assert scored["selection"]["selected_candidate_ids"] == ["candidate_002"]
     assert selected["candidate_count"] == 1
-    assert result["status"] == "solved"
-    assert result["best_candidate_id"] == "candidate_002"
+    assert result["status"] == "failed"
+    assert result["best_candidate_id"] is None
     assert result["candidate_count"] == 1
 
 

@@ -732,7 +732,9 @@ def select_best_precise_result(results: list[dict[str, Any]]) -> dict[str, Any] 
         return None
     sense = completed[0]["exact_input"].get("exact_objective", {}).get("sense", "maximize")
     solved = [result for result in completed if result["exact_solution"].get("status") == "solved"]
-    pool = solved or completed
+    if not solved:
+        return None
+    pool = solved
     reverse = sense == "maximize"
     return sorted(pool, key=precise_result_objective_value, reverse=reverse)[0]
 
