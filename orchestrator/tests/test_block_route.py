@@ -131,6 +131,7 @@ def test_block_route_avoid_blocks_generate_candidate_bundle() -> None:
     assert bundle["candidate_count"] == 9
     choices = [candidate["avoid_choices"][0] for candidate in bundle["candidates"]]
     assert all(choice["active_slots"] == [3, 4] for choice in choices)
+    assert all(choice["active_slot_groups"] == [[3, 4]] for choice in choices)
     assert choices[0]["schedule"]["kind"] == "route_transition"
     assert [phase["side"] for phase in choices[0]["schedule"]["phases"]] == ["north", "south"]
 
@@ -141,6 +142,84 @@ def test_block_route_avoid_blocks_generate_candidate_bundle() -> None:
     }
     assert first_constraints["avoid_post_route_transition_p1_north_tick_3"]["max_z"] == 2.7
     assert first_constraints["avoid_post_route_transition_p2_south_tick_4"]["min_z"] == 4.3
+
+
+def test_block_route_prioritizes_disjoint_blockage_window_transition() -> None:
+    bundle = block_route_to_candidate_bundle(
+        {
+            "version": 1,
+            "name": "multi_blockage_route",
+            "landing_blocks": [
+                {"id": "start", "x": 0, "y": 64, "z": 0},
+                {"id": "finish", "x": 0, "y": 64, "z": 7},
+            ],
+            "avoid_blocks": [
+                {
+                    "id": "post",
+                    "x": 0,
+                    "y": 65,
+                    "z": 3,
+                    "between": ["start", "finish"],
+                    "corner_hints": ["north_west", "south_west"],
+                }
+            ],
+            "candidate_selection": {"max_generated_candidates": 3},
+        }
+    )
+
+    choice = bundle["candidates"][0]["avoid_choices"][0]
+    assert choice["active_slot_groups"] == [[2, 3, 4], [11, 12, 13]]
+    assert choice["schedule"]["kind"] == "route_group_transition"
+    assert choice["schedule"]["transition_after_slot"] == 4
+    assert [phase["slots"] for phase in choice["schedule"]["phases"]] == [[2, 3, 4], [11, 12, 13]]
+    assert [phase["side"] for phase in choice["schedule"]["phases"]] == ["north", "south"]
+
+
+def test_block_route_fairly_caps_multiple_avoid_block_combinations() -> None:
+    bundle = block_route_to_candidate_bundle(
+        {
+            "version": 1,
+            "name": "multi_avoid_route",
+            "landing_blocks": [
+                {"id": "start", "x": 0, "y": 64, "z": 0, "run_ticks": 1},
+                {"id": "middle", "x": 0, "y": 65, "z": 2.5},
+                {"id": "finish", "x": 0, "y": 64, "z": 6},
+                {"id": "exit", "x": 1, "y": 64, "z": 9},
+            ],
+            "avoid_blocks": [
+                {
+                    "id": "post1",
+                    "x": 0,
+                    "y": 66,
+                    "z": 4,
+                    "between": ["middle", "finish"],
+                    "corner_hints": ["north_west"],
+                },
+                {
+                    "id": "post2",
+                    "x": 0.5,
+                    "y": 65,
+                    "z": 7.2,
+                    "between": ["finish", "exit"],
+                    "corner_hints": ["north_east"],
+                },
+            ],
+            "candidate_selection": {"max_generated_candidates": 5},
+        }
+    )
+
+    schedules = [
+        tuple(choice["schedule"].get("transition_after_slot") for choice in candidate["avoid_choices"])
+        for candidate in bundle["candidates"]
+    ]
+    assert schedules == [
+        (14, 28),
+        (14, 26),
+        (12, 28),
+        (12, 26),
+        (14, 27),
+    ]
+    assert all(len(candidate["avoid_choices"]) == 2 for candidate in bundle["candidates"])
 
 
 def test_block_route_demo_has_feasible_avoid_candidate() -> None:
@@ -173,6 +252,19 @@ def test_block_route_demo_has_feasible_avoid_candidate() -> None:
 
     assert solution["status"] == "solved"
     assert solution["diagnostics"]["final_residual_norm"] == "0.0"
+
+
+def test_block_route_two_avoid_fixture_has_disjoint_blockage_groups() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    route = json.loads((repo_root / "examples/block_route_two_avoid/block_route.json").read_text(encoding="utf-8"))
+    bundle = block_route_to_candidate_bundle(route)
+
+    assert bundle["candidate_count"] == 1
+    choices = bundle["candidates"][0]["avoid_choices"]
+    assert [choice["avoid_id"] for choice in choices] == ["center_post", "east_post"]
+    assert all(choice["active_slot_groups"] == [[12, 13, 14], [21, 22, 23, 24, 25]] for choice in choices)
+    assert all(choice["schedule"]["kind"] == "route_group_transition" for choice in choices)
+    assert all(choice["schedule"]["transition_after_slot"] == 14 for choice in choices)
 
 
 def test_block_route_rejects_avoid_blocks_between_nonconsecutive_landings() -> None:

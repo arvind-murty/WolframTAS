@@ -220,6 +220,10 @@ performs the final strict constraint validation/repair.
 fixture. `examples/block_route_demo/block_route.json` includes an avoid block
 and has a tested feasible route-transition candidate for inspecting
 candidate-generation/scoring behavior.
+`examples/block_route_two_avoid/block_route.json` is a stricter route fixture
+with two avoid blocks on the same jump; both avoid blocks have disjoint active
+vertical-overlap windows, and the first generated candidate uses the
+group-boundary transition for both.
 
 The orchestrator runs the canonical Mathematica optimizer and writes the
 approximate solution JSON with:

@@ -316,6 +316,7 @@ def _candidate_templates(
         if segment is None:
             raise ValueError(f"avoid block {avoid['id']} must be between consecutive landing blocks")
         active_slots = _active_collision_slots(avoid, segment)
+        active_slot_groups = _slot_groups(active_slots)
         endpoint_sides = _route_endpoint_sides(avoid, landing_by_id[from_id], landing_by_id[to_id], origin)
         schedules = _avoid_schedules(avoid, active_slots, endpoint_sides=endpoint_sides)
         per_avoid_options.append([
@@ -323,6 +324,7 @@ def _candidate_templates(
                 "avoid_id": avoid["id"],
                 "between": avoid["between"],
                 "active_slots": active_slots,
+                "active_slot_groups": active_slot_groups,
                 "schedule": schedule,
                 "constraints": _avoid_constraints(avoid, schedule, origin),
             }
@@ -337,9 +339,11 @@ def _candidate_templates(
         raise ValueError("candidate_selection.max_generated_candidates must be > 0")
 
     candidates: list[dict[str, Any]] = []
-    for index, combination in enumerate(itertools.product(*per_avoid_options)):
+    option_combinations = _fair_option_combinations([len(options) for options in per_avoid_options])
+    for index, option_indexes in enumerate(option_combinations):
         if index >= max_candidates:
             break
+        combination = [per_avoid_options[avoid_index][option_index] for avoid_index, option_index in enumerate(option_indexes)]
         template = copy.deepcopy(base_template)
         candidate_id = f"candidate_{index + 1:03d}"
         avoid_choices = [_choice_metadata(choice) for choice in combination]
@@ -361,6 +365,13 @@ def _candidate_templates(
         })
 
     return candidates
+
+
+def _fair_option_combinations(option_counts: list[int]) -> list[tuple[int, ...]]:
+    """Rank Cartesian-product option indexes so early options from every avoid
+    block are explored before deep variants from only one avoid block."""
+    combinations = list(itertools.product(*(range(count) for count in option_counts)))
+    return sorted(combinations, key=lambda indexes: (sum(indexes), max(indexes, default=0), indexes))
 
 
 def _active_collision_slots(avoid: dict[str, Any], segment: dict[str, Any]) -> list[int]:
@@ -389,6 +400,16 @@ def _active_collision_slots(avoid: dict[str, Any], segment: dict[str, Any]) -> l
 
 def _intervals_overlap(a_min: float, a_max: float, b_min: float, b_max: float) -> bool:
     return a_min < b_max and b_min < a_max
+
+
+def _slot_groups(slots: list[int]) -> list[list[int]]:
+    groups: list[list[int]] = []
+    for slot in slots:
+        if not groups or slot != groups[-1][-1] + 1:
+            groups.append([slot])
+        else:
+            groups[-1].append(slot)
+    return groups
 
 
 def _avoid_schedules(
@@ -421,6 +442,19 @@ def _avoid_schedules(
         if start_side == end_side:
             add_schedule({"kind": "route_side", "phases": [{"slots": active_slots, "side": start_side}]})
         elif len(active_slots) >= 2:
+            groups = _slot_groups(active_slots)
+            if len(groups) >= 2:
+                consumed = 0
+                for group in groups[:-1]:
+                    consumed += len(group)
+                    add_schedule({
+                        "kind": "route_group_transition",
+                        "transition_after_slot": active_slots[consumed - 1],
+                        "phases": [
+                            {"slots": active_slots[:consumed], "side": start_side},
+                            {"slots": active_slots[consumed:], "side": end_side},
+                        ],
+                    })
             for split_index in range(1, len(active_slots)):
                 add_schedule({
                     "kind": "route_transition",
@@ -572,6 +606,7 @@ def _choice_metadata(choice: dict[str, Any]) -> dict[str, Any]:
         "avoid_id": choice["avoid_id"],
         "between": copy.deepcopy(choice["between"]),
         "active_slots": copy.deepcopy(choice["active_slots"]),
+        "active_slot_groups": copy.deepcopy(choice["active_slot_groups"]),
         "schedule": copy.deepcopy(choice["schedule"]),
         "constraint_count": len(choice["constraints"]),
     }

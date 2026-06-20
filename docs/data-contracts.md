@@ -208,14 +208,18 @@ plus optional solid avoid blocks:
 - `avoid_blocks[*]` are separate solid blocks with `between: [from, to]`
   identifying the consecutive landing-block segment where they apply. `height`
   defaults to `1`; optional `corner_hints` and `transition_tick_window` narrow
-  candidate enumeration.
+  candidate enumeration. When vertical overlap with an avoid block happens in
+  disjoint slot groups, the compiler prioritizes route-transition schedules at
+  the group boundary before trying less structured split ticks.
 - `candidate_selection` controls avoid candidate generation and scoring:
   `max_generated_candidates`, `max_precise_candidates`, `objective_margin`,
   `coarse_tolerance`, `wolfram_timeout`, and `coarse_optimizer` (`method`,
   `accuracy_goal`, `precision_goal`, `max_iterations`). CLI flags can override
   these values. Coarse Wolfram failures and timeouts remain attached to the
   failed candidate as diagnostics and are excluded from precise candidate
-  selection.
+  selection. For multiple avoid blocks, `max_generated_candidates` is applied to
+  a fair ordering over the Cartesian product so early variants from every avoid
+  block are represented before deep variants from only one block.
 
 For each segment from departure block to target block, the compiler emits:
 
