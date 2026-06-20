@@ -49,10 +49,11 @@
     }
   ],
   "candidate_selection": {
-    "max_generated_candidates": 16,
-    "max_precise_candidates": 16,
+    "max_generated_candidates": 3,
+    "max_precise_candidates": 3,
     "objective_margin": 0.02,
     "coarse_tolerance": 0.03,
+    "wolfram_timeout": 60,
     "coarse_optimizer": {
       "method": "NelderMead",
       "accuracy_goal": 3,

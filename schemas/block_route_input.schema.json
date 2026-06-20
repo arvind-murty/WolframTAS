@@ -41,6 +41,7 @@
         "max_precise_candidates": { "type": "integer", "minimum": 1 },
         "objective_margin": { "type": "number", "minimum": 0 },
         "coarse_tolerance": { "type": "number", "minimum": 0 },
+        "wolfram_timeout": { "type": "number", "exclusiveMinimum": 0 },
         "coarse_optimizer": {
           "type": "object",
           "properties": {

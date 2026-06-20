@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -151,6 +153,7 @@ def run_staged_exact_flow(
     default_relaxed_tolerance: float,
     solution_tolerance: float,
     macro_csv_out: Path | None = None,
+    wolfram_timeout: float | None = None,
 ) -> dict[str, Any]:
     """Run the staged Mathematica (strict + relaxed) optimize then the Python
     exact solver for an exact-solver template. Returns the strict/relaxed
@@ -167,13 +170,13 @@ def run_staged_exact_flow(
     with tempfile.TemporaryDirectory(prefix="wolframtas-solve-") as directory:
         strict_input = Path(directory) / "strict.json"
         strict_input.write_text(json.dumps(materialize_mathematica_problem(strict_problem)), encoding="utf-8")
-        strict_solution = run_wolfram_file(wolframscript, optimizer_script, strict_input)
+        strict_solution = run_wolfram_file(wolframscript, optimizer_script, strict_input, timeout=wolfram_timeout)
         if skip_relaxed_wolfram:
             relaxed_solution = copy.deepcopy(strict_solution)
         else:
             relaxed_input = Path(directory) / "relaxed.json"
             relaxed_input.write_text(json.dumps(materialize_mathematica_problem(relaxed_problem)), encoding="utf-8")
-            relaxed_solution = run_wolfram_file(wolframscript, optimizer_script, relaxed_input)
+            relaxed_solution = run_wolfram_file(wolframscript, optimizer_script, relaxed_input, timeout=wolfram_timeout)
 
     assert_solution_close(strict_solution, relaxed_solution, solution_tolerance)
     strict_solution.setdefault("diagnostics", {})["stage"] = "strict"
@@ -195,6 +198,7 @@ def run_staged_exact_flow(
         "relaxed_solution": relaxed_solution,
         "exact_input": exact_input,
         "exact_solution": exact_solution,
+        "macro_csv": str(macro_csv_out) if macro_csv_out is not None else None,
     }
 
 
@@ -351,6 +355,7 @@ def score_block_route_command(argv: list[str]) -> int:
     parser.add_argument("--precision-goal", type=int)
     parser.add_argument("--max-iterations", type=int)
     parser.add_argument("--method")
+    parser.add_argument("--wolfram-timeout", type=float, help="Per-candidate Wolfram timeout in seconds.")
     args = parser.parse_args(argv)
 
     payload = read_json(args.input)
@@ -362,6 +367,7 @@ def score_block_route_command(argv: list[str]) -> int:
         optimizer_script=args.optimizer_script,
         coarse_tolerance=settings["coarse_tolerance"],
         optimizer=settings["optimizer"],
+        wolfram_timeout=settings["wolfram_timeout"],
     )
     selected = select_scored_candidates(
         scored,
@@ -402,6 +408,7 @@ def solve_block_route_candidates_command(argv: list[str]) -> int:
     )
     parser.add_argument("--default-relaxed-tolerance", type=float)
     parser.add_argument("--solution-tolerance", type=float)
+    parser.add_argument("--wolfram-timeout", type=float, help="Per-Wolfram solve timeout in seconds.")
     args = parser.parse_args(argv)
 
     bundle = load_or_build_candidate_bundle(read_json(args.input))
@@ -412,6 +419,7 @@ def solve_block_route_candidates_command(argv: list[str]) -> int:
         default_relaxed_tolerance=args.default_relaxed_tolerance,
         solution_tolerance=args.solution_tolerance,
         macro_out_dir=args.macro_out_dir,
+        wolfram_timeout=args.wolfram_timeout,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
@@ -442,6 +450,7 @@ def solve_block_route_command(argv: list[str]) -> int:
     parser.add_argument("--method")
     parser.add_argument("--default-relaxed-tolerance", type=float)
     parser.add_argument("--solution-tolerance", type=float)
+    parser.add_argument("--wolfram-timeout", type=float, help="Per-Wolfram solve timeout in seconds.")
     args = parser.parse_args(argv)
 
     from .block_route import block_route_to_candidate_bundle
@@ -461,6 +470,7 @@ def solve_block_route_command(argv: list[str]) -> int:
         optimizer_script=args.optimizer_script,
         coarse_tolerance=settings["coarse_tolerance"],
         optimizer=settings["optimizer"],
+        wolfram_timeout=settings["wolfram_timeout"],
     )
     selected = select_scored_candidates(
         scored,
@@ -494,6 +504,7 @@ def solve_block_route_command(argv: list[str]) -> int:
         default_relaxed_tolerance=args.default_relaxed_tolerance,
         solution_tolerance=args.solution_tolerance,
         macro_out_dir=args.macro_out_dir,
+        wolfram_timeout=settings["wolfram_timeout"],
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(precise, indent=2) + "\n", encoding="utf-8")
@@ -539,6 +550,7 @@ def candidate_selection_settings(payload: dict[str, Any], args: argparse.Namespa
     max_precise_candidates = int(_arg_or_setting(args, "max_precise_candidates", route_settings, 3))
     if max_precise_candidates <= 0:
         raise ValueError("max_precise_candidates must be > 0")
+    wolfram_timeout = _arg_or_setting(args, "wolfram_timeout", route_settings, None)
 
     optimizer = {
         "accuracy_goal": int(_arg_or_setting(args, "accuracy_goal", optimizer_settings, 3)),
@@ -551,6 +563,7 @@ def candidate_selection_settings(payload: dict[str, Any], args: argparse.Namespa
         "objective_margin": float(objective_margin),
         "max_precise_candidates": max_precise_candidates,
         "optimizer": optimizer,
+        "wolfram_timeout": None if wolfram_timeout is None else float(wolfram_timeout),
     }
 
 
@@ -581,6 +594,7 @@ def solve_candidate_bundle_precise(
     default_relaxed_tolerance: float | None,
     solution_tolerance: float | None,
     macro_out_dir: Path | None,
+    wolfram_timeout: float | None = None,
 ) -> dict[str, Any]:
     candidates = selected_candidates_from_bundle(bundle)
     results: list[dict[str, Any]] = []
@@ -607,8 +621,15 @@ def solve_candidate_bundle_precise(
                 optimizer_script=optimizer_script,
                 default_relaxed_tolerance=candidate_default_relaxed_tolerance,
                 solution_tolerance=candidate_solution_tolerance,
-                macro_csv_out=macro_csv_out,
+                macro_csv_out=None,
+                wolfram_timeout=wolfram_timeout,
             )
+            macro_csv_path = None
+            if macro_csv_out is not None and result["exact_solution"].get("status") == "solved":
+                from .python_solver import write_macro_csv as _write_csv
+                macro_csv_out.parent.mkdir(parents=True, exist_ok=True)
+                _write_csv(macro_csv_out, result["exact_solution"])
+                macro_csv_path = str(macro_csv_out)
             results.append({
                 "id": candidate["id"],
                 "status": "completed",
@@ -618,7 +639,7 @@ def solve_candidate_bundle_precise(
                 "relaxed_solution": result["relaxed_solution"],
                 "exact_input": result["exact_input"],
                 "exact_solution": result["exact_solution"],
-                "macro_csv": str(macro_csv_out) if macro_csv_out is not None else None,
+                "macro_csv": macro_csv_path,
             })
         except Exception as exc:
             fallback = solve_candidate_from_coarse_solution(
@@ -662,12 +683,14 @@ def score_candidate_bundle(
     optimizer_script: Path,
     coarse_tolerance: float,
     optimizer: dict[str, Any],
+    wolfram_timeout: float | None = None,
 ) -> dict[str, Any]:
     scored = copy.deepcopy(bundle)
     scored["kind"] = "scored_block_route_candidate_bundle"
     scored["scoring"] = {
         "coarse_tolerance": coarse_tolerance,
         "optimizer": copy.deepcopy(optimizer),
+        "wolfram_timeout": wolfram_timeout,
     }
     for candidate in scored.get("candidates", []):
         exact_template = candidate["exact_template"]
@@ -683,7 +706,7 @@ def score_candidate_bundle(
             problem_input = Path(directory) / f"{candidate['id']}.json"
             problem_input.write_text(json.dumps(materialize_mathematica_problem(problem)), encoding="utf-8")
             try:
-                solution = run_wolfram_file(wolframscript, optimizer_script, problem_input)
+                solution = run_wolfram_file(wolframscript, optimizer_script, problem_input, timeout=wolfram_timeout)
             except Exception as exc:
                 candidate["coarse_score"] = {
                     "status": "error",
@@ -731,12 +754,12 @@ def select_scored_candidates(
 
 def _rank_scored_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
     scored = [candidate for candidate in candidates if "objective_value" in candidate.get("coarse_score", {})]
+    errors = [candidate for candidate in candidates if "objective_value" not in candidate.get("coarse_score", {})]
     if not scored:
-        return []
+        return errors
     sense = scored[0]["exact_template"].get("exact_objective", {}).get("sense", "maximize")
     reverse = sense == "maximize"
     ranked = sorted(scored, key=lambda item: float(item["coarse_score"]["objective_value"]), reverse=reverse)
-    errors = [candidate for candidate in candidates if "objective_value" not in candidate.get("coarse_score", {})]
     return ranked + errors
 
 
@@ -775,7 +798,8 @@ def solve_candidate_from_coarse_solution(
     from .python_solver import solve as _py_solve, write_macro_csv as _write_csv
 
     exact_solution = _py_solve(exact_input)
-    if macro_csv_out is not None:
+    macro_written = exact_solution.get("status") == "solved" and macro_csv_out is not None
+    if macro_written:
         macro_csv_out.parent.mkdir(parents=True, exist_ok=True)
         _write_csv(macro_csv_out, exact_solution)
     return {
@@ -791,7 +815,7 @@ def solve_candidate_from_coarse_solution(
         "relaxed_solution": coarse_solution,
         "exact_input": exact_input,
         "exact_solution": exact_solution,
-        "macro_csv": str(macro_csv_out) if macro_csv_out is not None else None,
+        "macro_csv": str(macro_csv_out) if macro_written else None,
         "fallback_reason": "strict Wolfram failed; exact solver seeded from coarse solution",
     }
 
@@ -980,15 +1004,36 @@ def build_exact_solver_input(
     return exact_input
 
 
-def run_wolfram_file(wolframscript: str, optimizer_script: Path, input_path: Path) -> dict[str, Any]:
+def run_wolfram_file(
+    wolframscript: str,
+    optimizer_script: Path,
+    input_path: Path,
+    *,
+    timeout: float | None = None,
+) -> dict[str, Any]:
     command = [wolframscript, "-file", str(optimizer_script), str(input_path)]
-    completed = subprocess.run(command, text=True, capture_output=True)
-    if completed.returncode != 0:
-        stderr = completed.stderr.strip()
-        stdout = completed.stdout.strip()
-        detail = stderr or stdout or f"exit code {completed.returncode}"
+    process = subprocess.Popen(
+        command,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        stdout, stderr = process.communicate()
+        raise TimeoutError(f"wolframscript timed out after {timeout:g}s for {input_path}") from exc
+    if process.returncode != 0:
+        stderr_detail = stderr.strip()
+        stdout_detail = stdout.strip()
+        detail = stderr_detail or stdout_detail or f"exit code {process.returncode}"
         raise RuntimeError(f"wolframscript failed: {detail}")
-    return parse_process_json(wolframscript, completed.stdout)
+    return parse_process_json(wolframscript, stdout)
 
 
 def read_json(path: Path) -> dict[str, Any]:

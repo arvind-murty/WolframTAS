@@ -192,7 +192,10 @@ coarse relaxed tolerance on all candidate constraints, defaults to
 coarse objective, and selects the top/close candidates for the later strict
 staged exact flow. These defaults can be set in route JSON under
 `candidate_selection` (`coarse_tolerance`, `objective_margin`,
-`max_precise_candidates`, and `coarse_optimizer`) and overridden by CLI flags.
+`max_precise_candidates`, `wolfram_timeout`, and `coarse_optimizer`) and
+overridden by CLI flags. A candidate that times out or fails during coarse
+scoring is kept in the scored output with an error diagnostic, but it is not
+selected for precise solving.
 
 Run the precise staged/exact flow over the selected candidates:
 
@@ -207,7 +210,7 @@ The output contains `status`, candidate completion/error counts, strict,
 relaxed, exact-input, and exact-solution payloads for completed candidates, and
 per-candidate error text for failed candidates. `best_candidate_id` is `null`
 when no candidate completes successfully. When `--macro-out-dir` is provided,
-the command also writes one macro CSV per completed candidate.
+the command also writes one macro CSV per exact-solved candidate.
 If strict Wolfram fails for a candidate but the scored bundle contains a numeric
 coarse solution, the precise runner seeds the exact solver from that coarse
 solution and marks the result `completed_from_coarse`; the exact solver still

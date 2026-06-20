@@ -211,8 +211,11 @@ plus optional solid avoid blocks:
   candidate enumeration.
 - `candidate_selection` controls avoid candidate generation and scoring:
   `max_generated_candidates`, `max_precise_candidates`, `objective_margin`,
-  `coarse_tolerance`, and `coarse_optimizer` (`method`, `accuracy_goal`,
-  `precision_goal`, `max_iterations`). CLI flags can override these values.
+  `coarse_tolerance`, `wolfram_timeout`, and `coarse_optimizer` (`method`,
+  `accuracy_goal`, `precision_goal`, `max_iterations`). CLI flags can override
+  these values. Coarse Wolfram failures and timeouts remain attached to the
+  failed candidate as diagnostics and are excluded from precise candidate
+  selection.
 
 For each segment from departure block to target block, the compiler emits:
 
