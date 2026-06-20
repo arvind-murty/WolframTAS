@@ -914,7 +914,7 @@ def exact_template_to_mathematica_problem(
         if fill_missing_tolerance:
             constraint["mathematica_tolerance"] = constraint.get("mathematica_tolerance", constraint_tolerance)
         else:
-            constraint["mathematica_tolerance"] = 0.0
+            constraint["mathematica_tolerance"] = constraint.get("mathematica_tolerance", 0.0)
 
     objective = exact_template.get("exact_objective", {})
     axis = objective.get("axis", "z")

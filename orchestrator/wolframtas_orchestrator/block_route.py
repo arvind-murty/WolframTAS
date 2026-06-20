@@ -10,6 +10,7 @@ from .vertical_model import jump_air_ticks, vertical_trace
 
 PLAYER_HALF_WIDTH = 0.3
 PLAYER_HEIGHT = 1.8
+AVOID_MATHEMATICA_MARGIN = 0.0001
 SIDE_ORDER = ("west", "east", "north", "south")
 TRANSITION_SIDE_PAIRS = tuple((a, b) for a in SIDE_ORDER for b in SIDE_ORDER if a != b)
 TWO_CORNER_SIDE_TRIPLES = (
@@ -584,7 +585,7 @@ def _avoid_side_constraint(
         "id": constraint_id,
         "type": "position_bounds",
         "slot": slot,
-        "mathematica_tolerance": 0.0,
+        "mathematica_tolerance": AVOID_MATHEMATICA_MARGIN,
         "exact_tolerance": 0.0,
         "reason": f"avoid {avoid['id']} on {side} side",
     }

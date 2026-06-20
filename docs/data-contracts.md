@@ -210,7 +210,10 @@ plus optional solid avoid blocks:
   defaults to `1`; optional `corner_hints` and `transition_tick_window` narrow
   candidate enumeration. When vertical overlap with an avoid block happens in
   disjoint slot groups, the compiler prioritizes route-transition schedules at
-  the group boundary before trying less structured split ticks.
+  the group boundary before trying less structured split ticks. Generated avoid
+  constraints use a small Wolfram-only inward margin so the continuous optimizer
+  stays away from collision boundaries before yaw-bucket midpointing; exact
+  validation remains zero-tolerance.
 - `candidate_selection` controls avoid candidate generation and scoring:
   `max_generated_candidates`, `max_precise_candidates`, `objective_margin`,
   `coarse_tolerance`, `wolfram_timeout`, and `coarse_optimizer` (`method`,

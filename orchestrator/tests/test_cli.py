@@ -167,6 +167,53 @@ def test_exact_template_inertia_hit_adds_wolfram_event_and_zeroes_axis() -> None
     ]
 
 
+def test_exact_template_preserves_explicit_strict_mathematica_margin() -> None:
+    problem = exact_template_to_mathematica_problem(
+        {
+            "version": 1,
+            "name": "strict-margin",
+            "slot_indexing": "1_based",
+            "n": 1,
+            "movement_plan": {
+                "version": 1,
+                "slot_indexing": "1_based",
+                "slots": [
+                    {
+                        "slot": 1,
+                        "kind": "movement",
+                        "controls": {"forward": 1, "strafe": 0, "jump": False, "sneak": False, "sprint": True},
+                        "acceleration": {"medium": "air"},
+                        "retention": {"medium": "air"},
+                    }
+                ],
+            },
+            "constraints": [
+                {
+                    "id": "avoid_margin",
+                    "type": "position_bounds",
+                    "slot": 1,
+                    "max_z": 2.0,
+                    "mathematica_tolerance": 0.0001,
+                    "exact_tolerance": 0.0,
+                },
+                {
+                    "id": "normal_strict",
+                    "type": "position_bounds",
+                    "slot": 1,
+                    "min_z": 1.0,
+                },
+            ],
+            "exact_objective": {"type": "position", "axis": "z", "slot": 1},
+        },
+        constraint_tolerance=0.0,
+        fill_missing_tolerance=False,
+    )
+
+    constraints = {constraint["id"]: constraint for constraint in problem["constraints"]}
+    assert constraints["avoid_margin"]["mathematica_tolerance"] == 0.0001
+    assert constraints["normal_strict"]["mathematica_tolerance"] == 0.0
+
+
 def test_run_mathematica_staged_rejects_large_objective_drift(tmp_path: Path) -> None:
     input_path = tmp_path / "problem.json"
     strict_output = tmp_path / "strict.json"
