@@ -269,6 +269,21 @@ def test_block_route_two_avoid_fixture_has_disjoint_blockage_groups() -> None:
     assert all(choice["schedule"]["transition_after_slot"] == 14 for choice in choices)
 
 
+def test_block_route_multi_avoid_fixture_spans_multiple_segments() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    route = json.loads((repo_root / "examples/block_route_multi_avoid/block_route.json").read_text(encoding="utf-8"))
+    bundle = block_route_to_candidate_bundle(route)
+
+    assert bundle["candidate_count"] == 1
+    choices = bundle["candidates"][0]["avoid_choices"]
+    assert [choice["avoid_id"] for choice in choices] == ["post1", "post2"]
+    assert [choice["between"] for choice in choices] == [["middle", "finish"], ["finish", "exit"]]
+    assert choices[0]["active_slot_groups"] == [[12, 13, 14], [21, 22, 23, 24, 25]]
+    assert choices[1]["active_slot_groups"] == [[26, 27, 28], [35, 36, 37]]
+    assert all(choice["schedule"]["kind"] == "route_group_transition" for choice in choices)
+    assert [choice["schedule"]["transition_after_slot"] for choice in choices] == [14, 28]
+
+
 def test_block_route_rejects_avoid_blocks_between_nonconsecutive_landings() -> None:
     try:
         block_route_to_candidate_bundle(

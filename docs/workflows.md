@@ -224,6 +224,10 @@ candidate-generation/scoring behavior.
 with two avoid blocks on the same jump; both avoid blocks have disjoint active
 vertical-overlap windows, and the first generated candidate uses the
 group-boundary transition for both.
+`examples/block_route_multi_avoid/block_route.json` spans four landing blocks
+and two avoid blocks on consecutive jumps. It is the regression fixture for
+keeping strict Wolfram avoid solves away from exact yaw-bucket collision
+boundaries.
 
 The orchestrator runs the canonical Mathematica optimizer and writes the
 approximate solution JSON with:
