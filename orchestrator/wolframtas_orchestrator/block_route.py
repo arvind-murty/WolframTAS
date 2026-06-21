@@ -54,16 +54,14 @@ def block_route_to_candidate_bundle(route: dict[str, Any]) -> dict[str, Any]:
         if initial_velocity is not None
         else float(route.get("init_speed", 0.0))
     )
-    initial_imux = _initial_retention_value(route, "initial_imux", "init_imux")
-    initial_imuz = _initial_retention_value(route, "initial_imuz", "init_imuz")
 
     slots: list[dict[str, Any]] = [
         {
             "slot": 1,
             "kind": "init",
             "speed": init_speed,
-            "imux": initial_imux,
-            "imuz": initial_imuz,
+            "imux": float(route.get("init_imux", retention_for("flat_ground"))),
+            "imuz": float(route.get("init_imuz", retention_for("flat_ground"))),
         }
     ]
     base_constraints: list[dict[str, Any]] = []
@@ -273,21 +271,6 @@ def _normalize_initial_velocity(value: Any) -> dict[str, float] | None:
         "x": float(value.get("x", 0.0)),
         "z": float(value.get("z", 0.0)),
     }
-
-
-def _initial_retention_value(route: dict[str, Any], preferred_key: str, legacy_key: str) -> float:
-    default = retention_for("flat_ground")
-    if preferred_key in route and legacy_key in route:
-        preferred = float(route[preferred_key])
-        legacy = float(route[legacy_key])
-        if preferred != legacy:
-            raise ValueError(f"use either {preferred_key} or {legacy_key}, not conflicting values")
-        return preferred
-    if preferred_key in route:
-        return float(route[preferred_key])
-    if legacy_key in route:
-        return float(route[legacy_key])
-    return float(default)
 
 
 def _safe_id(value: str) -> str:

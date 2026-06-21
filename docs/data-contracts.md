@@ -209,9 +209,8 @@ plus optional solid avoid blocks:
   speed `sqrt(vx^2 + vz^2)` plus a zero-tolerance slot-1 movement-direction
   constraint `atan2(vx, vz)`. The generated exact solver `initial_state.velocity`
   stays zero so the incoming momentum is not counted twice.
-- `initial_imux` and `initial_imuz` set the init-slot X/Z retention multipliers
-  and default to flat-ground retention. Legacy `init_imux`/`init_imuz` are still
-  accepted as aliases; conflicting alias values are rejected.
+- `init_imux` and `init_imuz` set the init-slot X/Z retention multipliers and
+  default to flat-ground retention.
 - `init_speed` remains a scalar shortcut for an incoming momentum magnitude whose
   direction is left to the optimizer. `initial_velocity` overrides `init_speed`
   when both are present.

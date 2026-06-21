@@ -78,8 +78,8 @@ def test_block_route_initial_position_and_velocity_seed_init_slot() -> None:
             ],
             "initial_position": {"x": 0.125, "y": 1.0, "z": -0.25},
             "initial_velocity": {"x": 0.3, "z": 0.4},
-            "initial_imux": 0.8,
-            "initial_imuz": 0.91,
+            "init_imux": 0.8,
+            "init_imuz": 0.91,
             "init_speed": 123.0,
         }
     )
@@ -114,26 +114,6 @@ def test_block_route_zero_initial_velocity_does_not_pin_init_direction() -> None
 
     assert template["movement_plan"]["slots"][0]["speed"] == 0.0
     assert all(constraint["id"] != "initial_velocity_direction" for constraint in template["constraints"])
-
-
-def test_block_route_rejects_conflicting_initial_retention_aliases() -> None:
-    try:
-        block_route_to_exact_template(
-            {
-                "version": 1,
-                "landing_blocks": [
-                    {"id": "start", "x": 0, "y": 64, "z": 0},
-                    {"id": "finish", "x": 0, "y": 64, "z": 3},
-                ],
-                "initial_imux": 0.8,
-                "init_imux": 0.91,
-            }
-        )
-    except ValueError as exc:
-        assert "initial_imux" in str(exc)
-        assert "init_imux" in str(exc)
-    else:
-        raise AssertionError("expected conflicting initial retention rejection")
 
 
 def test_block_route_uses_departure_block_run_ticks_across_segments() -> None:
