@@ -9,6 +9,8 @@
     "name": { "type": "string" },
     "initial_yaw": { "type": "number" },
     "initial_pitch": { "type": "number" },
+    "initial_position": { "$ref": "#/$defs/initial_position" },
+    "initial_velocity": { "$ref": "#/$defs/initial_velocity" },
     "init_speed": { "type": "number" },
     "init_imux": { "type": "number" },
     "init_imuz": { "type": "number" },
@@ -75,6 +77,23 @@
     { "required": ["blocks"], "not": { "required": ["landing_blocks"] } }
   ],
   "$defs": {
+    "initial_position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+    "initial_velocity": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
     "landing_block": {
       "type": "object",
       "required": ["x", "y", "z"],

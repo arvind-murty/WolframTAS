@@ -203,6 +203,15 @@ plus optional solid avoid blocks:
 - `landing_blocks[0]` is the starting/departure block and defines the relative
   coordinate origin for generated constraints. Legacy `blocks` is still accepted
   as an alias.
+- `initial_position` defaults to `{x: 0, y: 0, z: 0}` and is copied into the
+  generated exact solver `initial_state.position`.
+- `initial_velocity` is optional. When present, it is encoded as an init-slot
+  speed `sqrt(vx^2 + vz^2)` plus a zero-tolerance slot-1 movement-direction
+  constraint `atan2(vx, vz)`. The generated exact solver `initial_state.velocity`
+  stays zero so the incoming momentum is not counted twice.
+- `init_speed` remains a scalar shortcut for an incoming momentum magnitude whose
+  direction is left to the optimizer. `initial_velocity` overrides `init_speed`
+  when both are present.
 - Each following block is a landing target.
 - `x`, `y`, `z` are block lower-corner coordinates; the landing surface is
   `y + 1`.

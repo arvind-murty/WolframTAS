@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import itertools
+import math
 import re
 from typing import Any
 
@@ -46,12 +47,19 @@ def block_route_to_candidate_bundle(route: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(raw_avoid_blocks, list):
         raise ValueError("avoid_blocks must be a list")
     avoid_blocks = [_normalize_avoid_block(block, index) for index, block in enumerate(raw_avoid_blocks)]
+    initial_position = _normalize_initial_position(route.get("initial_position", {}))
+    initial_velocity = _normalize_initial_velocity(route.get("initial_velocity"))
+    init_speed = (
+        math.hypot(initial_velocity["x"], initial_velocity["z"])
+        if initial_velocity is not None
+        else float(route.get("init_speed", 0.0))
+    )
 
     slots: list[dict[str, Any]] = [
         {
             "slot": 1,
             "kind": "init",
-            "speed": float(route.get("init_speed", 0.0)),
+            "speed": init_speed,
             "imux": float(route.get("init_imux", retention_for("flat_ground"))),
             "imuz": float(route.get("init_imuz", retention_for("flat_ground"))),
         }
@@ -130,7 +138,7 @@ def block_route_to_candidate_bundle(route: dict[str, Any]) -> dict[str, Any]:
         "n": slot_number,
         "angle_domain": {"table_size": 65536},
         "initial_state": {
-            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "position": {"x": initial_position["x"], "y": initial_position["y"], "z": initial_position["z"]},
             "velocity": {"x": 0.0, "y": 0.0, "z": 0.0},
             "yaw": float(route.get("initial_yaw", 0.0)),
             "pitch": float(route.get("initial_pitch", 0.0)),
@@ -156,6 +164,16 @@ def block_route_to_candidate_bundle(route: dict[str, Any]) -> dict[str, Any]:
             "avoid_blocks": copy.deepcopy(avoid_blocks),
         }, *annotations],
     }
+    if initial_velocity is not None and init_speed > 0.0:
+        template["constraints"].append({
+            "id": "initial_velocity_direction",
+            "type": "facing_degrees_equal",
+            "slot": 1,
+            "degrees": math.degrees(math.atan2(initial_velocity["x"], initial_velocity["z"])),
+            "mathematica_tolerance_degrees": 0.0,
+            "exact_tolerance_degrees": 0.0,
+            "reason": "initial_velocity fixes init slot movement direction",
+        })
 
     for key in ("solver", "optimizer", "exact_solver"):
         if key in route:
@@ -229,6 +247,29 @@ def _normalize_avoid_block(block: dict[str, Any], index: int) -> dict[str, Any]:
         "between": [_safe_id(between[0]), _safe_id(between[1])],
         "corner_hints": [_safe_id(str(item)) for item in block.get("corner_hints", [])],
         "transition_tick_window": copy.deepcopy(block.get("transition_tick_window")),
+    }
+
+
+def _normalize_initial_position(value: Any) -> dict[str, float]:
+    if value is None:
+        value = {}
+    if not isinstance(value, dict):
+        raise ValueError("initial_position must be an object")
+    return {
+        "x": float(value.get("x", 0.0)),
+        "y": float(value.get("y", 0.0)),
+        "z": float(value.get("z", 0.0)),
+    }
+
+
+def _normalize_initial_velocity(value: Any) -> dict[str, float] | None:
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError("initial_velocity must be an object")
+    return {
+        "x": float(value.get("x", 0.0)),
+        "z": float(value.get("z", 0.0)),
     }
 
 

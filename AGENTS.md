@@ -281,6 +281,10 @@ let mod concerns drive the core contracts.
   spanning `[b, b+1]`, the overlap range for the player center is
   `[b - 0.3, b + 1.3]`. When an objective pushes toward one side, the opposite
   bound can often be omitted for a simpler example.
+- Block-route `initial_velocity` is encoded through the first `init` slot, not
+  through exact-solver `initial_state.velocity`: `speed = sqrt(vx^2 + vz^2)` and
+  slot 1 movement direction is fixed to `atan2(vx, vz)`. This prevents
+  double-counting incoming momentum while preserving the vector direction.
 - Ladders have a thin `0.125b` physical collision box in 1.8.9, but ladder
   movement effects use a separate climbable/restricted movement voxel.
 - The ladder voxel is `1x1x1` in coordinate space for the ladder block, except

@@ -67,6 +67,50 @@ def test_block_route_accepts_explicit_landing_blocks_alias() -> None:
     assert template["constraints"][0]["id"] == "land_finish_tick_13"
 
 
+def test_block_route_initial_position_and_velocity_seed_init_slot() -> None:
+    template = block_route_to_exact_template(
+        {
+            "version": 1,
+            "name": "seeded_route",
+            "landing_blocks": [
+                {"id": "start", "x": 10, "y": 64, "z": 20},
+                {"id": "finish", "x": 10, "y": 64, "z": 23},
+            ],
+            "initial_position": {"x": 0.125, "y": 1.0, "z": -0.25},
+            "initial_velocity": {"x": 0.3, "z": 0.4},
+            "init_speed": 123.0,
+        }
+    )
+
+    assert template["initial_state"]["position"] == {"x": 0.125, "y": 1.0, "z": -0.25}
+    assert template["initial_state"]["velocity"] == {"x": 0.0, "y": 0.0, "z": 0.0}
+    assert math.isclose(template["movement_plan"]["slots"][0]["speed"], math.hypot(0.3, 0.4))
+
+    constraints = {constraint["id"]: constraint for constraint in template["constraints"]}
+    velocity_direction = constraints["initial_velocity_direction"]
+    assert velocity_direction["slot"] == 1
+    assert velocity_direction["type"] == "facing_degrees_equal"
+    assert math.isclose(velocity_direction["degrees"], math.degrees(math.atan2(0.3, 0.4)))
+    assert velocity_direction["mathematica_tolerance_degrees"] == 0.0
+    assert velocity_direction["exact_tolerance_degrees"] == 0.0
+
+
+def test_block_route_zero_initial_velocity_does_not_pin_init_direction() -> None:
+    template = block_route_to_exact_template(
+        {
+            "version": 1,
+            "landing_blocks": [
+                {"id": "start", "x": 0, "y": 64, "z": 0},
+                {"id": "finish", "x": 0, "y": 64, "z": 3},
+            ],
+            "initial_velocity": {"x": 0.0, "z": 0.0},
+        }
+    )
+
+    assert template["movement_plan"]["slots"][0]["speed"] == 0.0
+    assert all(constraint["id"] != "initial_velocity_direction" for constraint in template["constraints"])
+
+
 def test_block_route_uses_departure_block_run_ticks_across_segments() -> None:
     template = block_route_to_exact_template(
         {
