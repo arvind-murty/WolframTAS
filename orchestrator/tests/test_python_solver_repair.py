@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from numpy import float32 as fl
+from wolframtas_orchestrator.block_route import block_route_to_candidate_bundle
 from wolframtas_orchestrator.python_solver import solve
 
 _VENDOR = Path(__file__).resolve().parents[1] / "vendor"
@@ -99,6 +100,72 @@ def test_explicit_repair_budget_is_respected() -> None:
     assert solution["status"] == "failed"
     assert float(solution["diagnostics"]["final_residual_norm"]) > 0.0
     assert solution["diagnostics"]["candidate_evaluations"] == 0
+
+
+def test_repair_uses_compound_windows_for_multi_avoid_boundaries() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    route = json.loads((repo_root / "examples/block_route_multi_avoid/block_route.json").read_text(encoding="utf-8"))
+    candidate = block_route_to_candidate_bundle(route)["candidates"][0]
+    exact_input = candidate["exact_template"]
+    exact_input["optimal_solution"] = {
+        "status": "optimal",
+        "objective_value": 9.475511385038725,
+        "movement_directions": [
+            {"slot": slot, "radians": radians}
+            for slot, radians in [
+                (1, 0.123),
+                (2, 0.09623023309399126),
+                (3, 0.14850256150835875),
+                (4, 0.07073510481127646),
+                (5, 0.07580466395507254),
+                (6, 0.08173679960287843),
+                (7, 0.08865730978121582),
+                (8, 0.09664837628050287),
+                (9, 0.10565087599241309),
+                (10, 0.11523351520646401),
+                (11, 0.12404499143904404),
+                (12, 0.7315820101681351),
+                (13, -0.010303733383511789),
+                (14, -0.12769277371188006),
+                (15, -0.3406710144072941),
+                (16, -0.6263415187317635),
+                (17, -1.0299079456343885),
+                (18, -1.3998661123484333),
+                (19, -0.9680036292837091),
+                (20, 2.51859126820489),
+                (21, 2.8174606392257013),
+                (22, 2.9538350566958593),
+                (23, -1.7660727315655175e-07),
+                (24, -2.597752811927119e-09),
+                (25, -1.5938296809378556e-09),
+                (26, -8.395199418641902e-10),
+                (27, -6.13171190550456e-10),
+                (28, -4.76060761079104e-10),
+                (29, -3.724359626122155e-10),
+                (30, -3.7469498760671066e-10),
+                (31, -3.775864749053063e-10),
+                (32, -3.8138522559143185e-10),
+                (33, -3.865291399156162e-10),
+                (34, -3.9369981305486587e-10),
+                (35, -4.0359883716799035e-10),
+                (36, -4.1166484386406076e-10),
+                (37, -2.3237984559505927e-10),
+            ]
+        ],
+    }
+    exact_input["exact_objective"]["target_value"] = 9.475511385038725
+    exact_input["exact_objective"]["solution_tolerance"] = 0.001
+
+    solution = solve(exact_input)
+
+    assert solution["status"] == "solved"
+    assert float(solution["diagnostics"]["final_residual_norm"]) == 0.0
+    changed = solution["diagnostics"]["changed_angle_indices"]
+    assert all(abs(change["delta"]) <= 2 for change in changed)
+    assert any(
+        later["slot"] == earlier["slot"] + 1 and later["delta"] == earlier["delta"]
+        for earlier, later in zip(changed, changed[1:])
+    )
 
 
 def test_exact_states_match_emitted_macro_bucket_yaws() -> None:

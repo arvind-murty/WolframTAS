@@ -183,6 +183,10 @@ Exact-solver numeric policy:
 - `mcsin`/`mccos` use Minecraft's float32 angle indexing formulas with a
   65536-entry domain, but currently compute the indexed sine value using
   `std::sin` on demand instead of storing a table.
+- Exact repair keeps each yaw index within two table indices of the Mathematica
+  seed by default. When single-slot beam search stalls, the solver tries
+  contiguous compound windows so several adjacent ticks can move together
+  without exceeding the per-tick cap.
 - Degree conversion is output-only for `angles_discrete` diagnostics and macro
   relative yaw deltas.
 
@@ -210,10 +214,7 @@ plus optional solid avoid blocks:
   defaults to `1`; optional `corner_hints` and `transition_tick_window` narrow
   candidate enumeration. When vertical overlap with an avoid block happens in
   disjoint slot groups, the compiler prioritizes route-transition schedules at
-  the group boundary before trying less structured split ticks. Generated avoid
-  constraints use a small Wolfram-only inward margin so the continuous optimizer
-  stays away from collision boundaries before yaw-bucket midpointing; exact
-  validation remains zero-tolerance.
+  the group boundary before trying less structured split ticks.
 - `candidate_selection` controls avoid candidate generation and scoring:
   `max_generated_candidates`, `max_precise_candidates`, `objective_margin`,
   `coarse_tolerance`, `wolfram_timeout`, and `coarse_optimizer` (`method`,

@@ -331,6 +331,10 @@ let mod concerns drive the core contracts.
   `failed` result is currently a repair-search/budget outcome (local search can
   stop before finding a feasible index set with default settings), not a relaxed
   acceptance path.
+- Exact repair keeps each yaw index within two table indices of the Mathematica
+  seed by default. If single-slot beam search stalls, it tries deterministic
+  contiguous compound windows so several adjacent ticks can move together while
+  preserving the same per-tick +/-2 cap.
 - The solver compiles with `-ffp-contract=off`. numpy never fuses multiply-add,
   and a fused `strafe*cos - forward*sin` computes one product at extended
   precision, breaking the exact cancellation that makes a symmetric 45 input

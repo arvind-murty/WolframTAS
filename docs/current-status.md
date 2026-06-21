@@ -172,7 +172,9 @@ movement_direction stays the travel direction and the solver derives the 45°
 facing; the locked `flat_sprintjump_45` z is
 unchanged. The solver compiles with
 `-ffp-contract=off` so float32 arithmetic matches numpy bit-exactly (no fused
-multiply-add). Mechanics covered and mothball-validated: fluids, inertia
+multiply-add). Exact repair keeps the per-tick yaw delta capped at +/-2 and can
+repair contiguous tick windows together when a single-slot search stalls.
+Mechanics covered and mothball-validated: fluids, inertia
 hit/avoid, wall-hit, slime, ladder clamp, cobweb, sprint delay, sneak, sneak-45.
 
 ## Block Route Builder

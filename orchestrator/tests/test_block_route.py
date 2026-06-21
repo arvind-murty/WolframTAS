@@ -141,8 +141,6 @@ def test_block_route_avoid_blocks_generate_candidate_bundle() -> None:
         if constraint["id"].startswith("avoid_")
     }
     assert first_constraints["avoid_post_route_transition_p1_north_tick_3"]["max_z"] == 2.7
-    assert first_constraints["avoid_post_route_transition_p1_north_tick_3"]["mathematica_tolerance"] == 0.0001
-    assert first_constraints["avoid_post_route_transition_p1_north_tick_3"]["exact_tolerance"] == 0.0
     assert first_constraints["avoid_post_route_transition_p2_south_tick_4"]["min_z"] == 4.3
 
 

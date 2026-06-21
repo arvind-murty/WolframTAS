@@ -353,9 +353,11 @@ def _repair(
 ) -> tuple[list[int], dict[str, Any]]:
     cfg = exact_input.get("exact_solver", {})
     max_iter = int(cfg.get("max_repair_iterations", 16))
-    max_evals = int(cfg.get("max_candidate_evaluations", 8000))
+    max_evals = int(cfg.get("max_candidate_evaluations", 20000))
     beam_width = int(cfg.get("top_k_moves", 8))
     max_delta = min(2, max(1, int(cfg.get("max_index_delta_per_iteration", 2))))
+    max_window = max(2, int(cfg.get("max_compound_window_length", 12)))
+    max_window_rounds = max(0, int(cfg.get("max_compound_repair_rounds", 8)))
 
     slots = exact_input["movement_plan"]["slots"]
     movable = [i for i, s in enumerate(slots) if s.get("kind", "movement") != "init"]
@@ -370,7 +372,15 @@ def _repair(
     if best_ev.feasible:
         return best, _diag(initial_ev, best_ev, 0, 0, seed_indices, best)
 
-    for _ in range(max_iter):
+    def evaluate_candidate(candidate: list[int]) -> _Eval | None:
+        nonlocal evals
+        if evals >= max_evals:
+            return None
+        evals += 1
+        return _evaluate(_simulate_raw(exact_input, candidate, seed_indices), exact_input, candidate, dirs)
+
+    def coordinate_pass() -> bool:
+        nonlocal best, best_ev, iters
         iters += 1
         pass_start_score = best_ev.score
         beam: list[tuple[float, list[int], _Eval]] = [(best_ev.score, list(best), best_ev)]
@@ -390,10 +400,9 @@ def _repair(
                     if delta == current_delta:
                         cand_ev = ev
                     else:
-                        if evals >= max_evals:
+                        cand_ev = evaluate_candidate(cand)
+                        if cand_ev is None:
                             continue
-                        cand_ev = _evaluate(_simulate_raw(exact_input, cand, seed_indices), exact_input, cand, dirs)
-                        evals += 1
                     expanded.append((cand_ev.score, cand, cand_ev))
                     if cand_ev.score < best_ev.score:
                         best = list(cand)
@@ -406,10 +415,88 @@ def _repair(
             if best_ev.feasible or evals >= max_evals:
                 break
 
-        if best_ev.score >= pass_start_score:
-            break
+        return best_ev.score < pass_start_score
+
+    def compound_window_pass() -> bool:
+        nonlocal best, best_ev
+        pass_start_score = best_ev.score
+        best_move: tuple[float, list[int], _Eval] | None = None
+        max_len = min(max_window, len(movable))
+        for length in range(2, max_len + 1):
+            for start in range(0, len(movable) - length + 1):
+                window = movable[start:start + length]
+
+                # Absolute assignment: several adjacent ticks all choose the
+                # same bucket-side within the allowed +/-2 repair envelope.
+                for delta in range(-max_delta, max_delta + 1):
+                    cand = list(best)
+                    changed = False
+                    for i in window:
+                        value = _apply_repair_delta(seed_indices[i], delta)
+                        if cand[i] != value:
+                            changed = True
+                        cand[i] = value
+                    if not changed:
+                        continue
+                    cand_ev = evaluate_candidate(cand)
+                    if cand_ev is None:
+                        return best_ev.score < pass_start_score
+                    if cand_ev.score < best_ev.score:
+                        best_move = (cand_ev.score, cand, cand_ev)
+                        if cand_ev.feasible:
+                            best = list(cand)
+                            best_ev = cand_ev
+                            return True
+
+                # Relative shift: move an already-shaped run one index in the
+                # same direction without exceeding the per-tick cap.
+                for step in (-1, 1):
+                    cand = list(best)
+                    changed = False
+                    ok = True
+                    for i in window:
+                        current_delta = _bounded_repair_delta(seed_indices[i], cand[i])
+                        next_delta = current_delta + step
+                        if next_delta < -max_delta or next_delta > max_delta:
+                            ok = False
+                            break
+                        value = _apply_repair_delta(seed_indices[i], next_delta)
+                        if cand[i] != value:
+                            changed = True
+                        cand[i] = value
+                    if not ok or not changed:
+                        continue
+                    cand_ev = evaluate_candidate(cand)
+                    if cand_ev is None:
+                        return best_ev.score < pass_start_score
+                    if cand_ev.score < best_ev.score:
+                        best_move = (cand_ev.score, cand, cand_ev)
+                        if cand_ev.feasible:
+                            best = list(cand)
+                            best_ev = cand_ev
+                            return True
+
+        if best_move is None:
+            return False
+        _score, candidate, candidate_ev = best_move
+        best = list(candidate)
+        best_ev = candidate_ev
+        return best_ev.score < pass_start_score
+
+    for _ in range(max_iter):
+        improved = coordinate_pass()
         if best_ev.feasible or evals >= max_evals:
             break
+        if not improved:
+            break
+
+    if not best_ev.feasible and evals < max_evals:
+        for _ in range(max_window_rounds):
+            improved = compound_window_pass()
+            if best_ev.feasible or evals >= max_evals:
+                break
+            if not improved:
+                break
 
     return best, _diag(initial_ev, best_ev, iters, evals, seed_indices, best)
 

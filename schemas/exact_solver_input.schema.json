@@ -65,7 +65,9 @@
         "max_repair_iterations": { "type": "integer", "minimum": 0 },
         "max_candidate_evaluations": { "type": "integer", "minimum": 0 },
         "top_k_moves": { "type": "integer", "minimum": 1 },
-        "max_index_delta_per_iteration": { "type": "integer", "minimum": 1 }
+        "max_index_delta_per_iteration": { "type": "integer", "minimum": 1 },
+        "max_compound_window_length": { "type": "integer", "minimum": 2 },
+        "max_compound_repair_rounds": { "type": "integer", "minimum": 0 }
       },
       "additionalProperties": false
     },
