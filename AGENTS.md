@@ -285,6 +285,9 @@ let mod concerns drive the core contracts.
   through exact-solver `initial_state.velocity`: `speed = sqrt(vx^2 + vz^2)` and
   slot 1 movement direction is fixed to `atan2(vx, vz)`. This prevents
   double-counting incoming momentum while preserving the vector direction.
+- Block-route `initial_imux`/`initial_imuz` are the preferred high-level fields
+  for first `init` slot retention. Legacy `init_imux`/`init_imuz` are aliases
+  only, and conflicting alias values should be rejected.
 - Ladders have a thin `0.125b` physical collision box in 1.8.9, but ladder
   movement effects use a separate climbable/restricted movement voxel.
 - The ladder voxel is `1x1x1` in coordinate space for the ladder block, except

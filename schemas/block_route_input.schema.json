@@ -11,6 +11,8 @@
     "initial_pitch": { "type": "number" },
     "initial_position": { "$ref": "#/$defs/initial_position" },
     "initial_velocity": { "$ref": "#/$defs/initial_velocity" },
+    "initial_imux": { "type": "number" },
+    "initial_imuz": { "type": "number" },
     "init_speed": { "type": "number" },
     "init_imux": { "type": "number" },
     "init_imuz": { "type": "number" },
